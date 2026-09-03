@@ -1,0 +1,12 @@
+﻿const fs = require('fs');
+let c = fs.readFileSync('storage/framework/views/fa4a7d13d62c4a07e1a903f4088e2ac6.php', 'utf8');
+c = c.replace(/<\?php echo e\((.*?)\); \?>/g, '{{ $1 }}');
+c = c.replace(/<\?php if\((.*?)\): \?>/g, '@if($1)');
+c = c.replace(/<\?php elseif\((.*?)\): \?>/g, '@elseif($1)');
+c = c.replace(/<\?php else: \?>/g, '@else');
+c = c.replace(/<\?php endif; \?>/g, '@endif');
+c = c.replace(/<\?php echo \\Illuminate\\Support\\Arr::toCssClasses\((.*?)\); \?>/g, '@class($1)');
+c = c.replace(/<\?php echo \$__env->yieldContent\('(.*?)'(?:, '(.*?)')?\); \?>/g, (m, p1, p2) => p2 ? `@yield('${p1}', '${p2}')` : `@yield('${p1}')`);
+c = c.replace(/<\?php echo \$__env->make\('(.*?)', \\Illuminate\\Support\\Arr::except\(get_defined_vars\(\), \['__data', '__path'\]\)\)->render\(\); \?>/g, "@include('$1')");
+c = c.replace(/<\?php echo csrf_field\(\); \?>/g, '@csrf');
+fs.writeFileSync('resources/views/layouts/app.blade.php', c, 'utf8');

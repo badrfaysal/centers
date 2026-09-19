@@ -43,6 +43,22 @@ Route::middleware('auth')->group(function () {
         return response()->json($notification);
     })->name('api.center.screen');
 
+    Route::get('/api/center-screen/waitlist', function () {
+        $waitlist = \App\Models\Waitlist::with(['child', 'specialist'])
+            ->where('status', 'waiting')
+            ->orderBy('id', 'asc') // First in first out
+            ->take(8)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'child_name' => $item->child->name,
+                    'specialist_name' => $item->specialist->name,
+                    'since' => $item->created_at->diffForHumans()
+                ];
+            });
+        return response()->json($waitlist);
+    });
+
     // 3. جدول وكالندر الجلسات العام وتوزيع الغرف (Master Timetable & Calendar)
     Route::get('/calendar', [ScheduleController::class, 'index'])->name('calendar.index');
     Route::get('/doctor-portal/timetable', [ScheduleController::class, 'specialistTimetable'])->name('doctor.timetable');

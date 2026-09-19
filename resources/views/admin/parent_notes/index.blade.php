@@ -37,13 +37,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="flex items-center gap-2">
-            <a href="{{ route('parent.portal') }}" target="_blank" class="px-4 py-2.5 rounded-2xl bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition flex items-center gap-2 border border-purple-100">
-                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                <span>معاينة بوابة ولي الأمر</span>
-            </a>
-        </div>
     </div>
 
     <!-- رسائل النجاح إن وجدت -->
@@ -238,7 +231,11 @@
                     <div class="flex items-center justify-between font-bold text-[11px]">
                         <span class="text-emerald-950 flex items-center gap-1.5">
                             <i class="fa-solid fa-reply"></i>
-                            <span>رد الإدارة المعتمد ({{ $msg->replied_by }}):</span>
+                            @if($msg->recipient_type === 'specialist')
+                                <span>{{ $msg->replied_by }}:</span>
+                            @else
+                                <span>رد الإدارة المعتمد ({{ $msg->replied_by }}):</span>
+                            @endif
                         </span>
                         <span class="text-emerald-700 font-mono text-[10px]">{{ $msg->replied_at ? $msg->replied_at->diffForHumans() : '' }}</span>
                     </div>
@@ -246,26 +243,30 @@
                 </div>
                 @endif
 
-                <!-- نموذج الرد الفوري من إدارة المركز -->
+                <!-- نموذج الرد الفوري -->
                 <form action="{{ route('admin.parent-notes.reply', $msg) }}" method="POST" class="pt-2 space-y-2.5 border-t border-slate-100">
                     @csrf
                     
                     <div class="flex items-center justify-between text-[11px] font-bold">
-                        <span class="text-slate-500"><i class="fa-solid fa-pen-nib ml-1 text-teal-600"></i> {{ $msg->doctor_reply ? 'تحديث الرد الرسمي:' : 'كتابة الرد الرسمي لولي الأمر:' }}</span>
+                        <span class="text-slate-500"><i class="fa-solid fa-pen-nib ml-1 text-teal-600"></i> {{ $msg->doctor_reply ? 'تحديث الرد:' : 'كتابة الرد لولي الأمر:' }}</span>
                         
-                        <select name="replied_by" class="p-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold">
-                            <option value="إدارة المركز العامة">إدارة المركز العامة</option>
-                            <option value="د. أحمد يسري (المشرف الطبي)">د. أحمد يسري (المشرف الطبي)</option>
-                            <option value="خدمة العملاء ورعاية الأهالي">خدمة العملاء ورعاية الأهالي</option>
-                        </select>
+                        @if($msg->recipient_type === 'specialist')
+                            <input type="hidden" name="replied_by" value="الأخصائي {{ $msg->child->main_specialist ?? 'المعالج' }}">
+                        @else
+                            <select name="replied_by" class="p-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold">
+                                <option value="إدارة المركز العامة">إدارة المركز العامة</option>
+                                <option value="د. أحمد يسري (المشرف الطبي)">د. أحمد يسري (المشرف الطبي)</option>
+                                <option value="خدمة العملاء ورعاية الأهالي">خدمة العملاء ورعاية الأهالي</option>
+                            </select>
+                        @endif
                     </div>
 
                     <div class="flex gap-2">
-                        <textarea name="admin_reply" required rows="2" placeholder="اكتب رد وتوجيه إدارة المركز لولي الأمر ليظهر له فوراً في بوابته..." class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white text-xs font-medium leading-relaxed"></textarea>
+                        <textarea name="admin_reply" required rows="2" placeholder="اكتب ردك لولي الأمر ليظهر له فوراً في بوابته..." class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white text-xs font-medium leading-relaxed"></textarea>
                         
                         <button type="submit" class="px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-black text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0 self-end">
                             <i class="fa-solid fa-paper-plane text-xs"></i>
-                            <span>{{ $msg->doctor_reply ? 'تحديث الرد' : 'إرسال الرد للأهل' }}</span>
+                            <span>{{ $msg->doctor_reply ? 'تحديث الرد' : 'إرسال الرد' }}</span>
                         </button>
                     </div>
                 </form>
@@ -273,14 +274,6 @@
                 <!-- أزرار الإجراءات السفلية -->
                 <div class="pt-2 flex items-center justify-between text-xs">
                     <div class="flex items-center gap-2">
-                        <!-- تبديل الأهمية العاجلة -->
-                        <form action="{{ route('admin.parent-notes.urgent', $msg) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 rounded-xl text-[11px] font-black transition flex items-center gap-1.5 {{ $msg->is_urgent ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300' }}">
-                                <i class="fa-solid fa-bolt text-[10px]"></i>
-                                <span class="{{ $msg->is_urgent ? 'text-white' : 'text-slate-800' }}">{{ $msg->is_urgent ? 'إلغاء العاجل' : 'تصنيف كـ عاجل' }}</span>
-                            </button>
-                        </form>
 
                         @if($msg->child && $msg->child->phone)
                         <a href="https://wa.me/2{{ $msg->child->phone }}" target="_blank" class="px-3 py-1.5 rounded-xl text-[11px] font-black bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm transition flex items-center gap-1.5">

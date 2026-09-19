@@ -78,7 +78,7 @@ class DashboardController extends Controller
         $rooms = [];
         $uniqueRooms = $todaySchedules->pluck('room_name')->filter()->unique();
         if ($uniqueRooms->isEmpty()) {
-            $uniqueRooms = ['غرفة التخاطب 1', 'غرفة التكامل الحسي', 'غرفة تنمية المهارات'];
+            $uniqueRooms = collect(\App\Http\Controllers\SettingController::getDropdownList('rooms'));
         }
 
         foreach ($uniqueRooms as $roomName) {
@@ -216,25 +216,13 @@ class DashboardController extends Controller
 
         // 5. باقات أوشكت على الانتهاء
         $lowBalancePackages = [];
-        $children = Child::where('status', 'active')->take(2)->get();
-        foreach ($children as $child) {
-            $lowBalancePackages[] = [
-                'child_name' => $child->name,
-                'child_code' => $child->code,
-                'parent_name' => $child->parent_name,
-                'parent_phone' => preg_replace('/[^0-9]/', '', $child->parent_phone ?? $child->phone ?? ''),
-                'package_name' => 'باقة تأهيل',
-                'remaining_sessions' => rand(1, 3),
-                'total_sessions' => 12,
-            ];
-        }
-
+        
         // 6. نشاط رسائل الواتساب الآلية اليوم
         $whatsappStats = [
-            'sent_reminders' => rand(10, 30),
-            'confirmed_by_parent' => rand(5, 20),
-            'rescheduled' => rand(0, 5),
-            'waiting_reply' => rand(0, 5),
+            'sent_reminders' => 0,
+            'confirmed_by_parent' => 0,
+            'rescheduled' => 0,
+            'waiting_reply' => 0,
         ];
 
         return view('dashboard.index', compact(

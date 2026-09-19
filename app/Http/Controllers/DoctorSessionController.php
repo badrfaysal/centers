@@ -106,22 +106,24 @@ class DoctorSessionController extends Controller
             'child_mood'        => 'required|string|max:50',
             'clinical_notes'    => 'required|string|min:5',
             'home_exercise'     => 'nullable|string',
-            'video'             => 'nullable|file|mimes:mp4,mov,avi,m4v,webm|max:51200',
+            'video'             => 'nullable|array',
+            'video.*'           => 'file|mimes:mp4,mov,avi,m4v,webm,jpeg,jpg,png|max:51200',
             'video_title'       => 'nullable|string|max:150',
             'goals'             => 'nullable|array',
             'goals.*.text'      => 'nullable|string',
             'goals.*.percentage' => 'nullable|integer|min:0|max:100',
-            'homework_file'     => 'nullable|file|mimes:mp4,mov,avi,webm,jpeg,jpg,png,m4a,mp3,wav|max:20480',
+            'homework_file'     => 'nullable|array',
+            'homework_file.*'   => 'file|mimes:mp4,mov,avi,webm,jpeg,jpg,png,m4a,mp3,wav|max:20480',
             'whatsapp_notify'   => 'nullable|boolean',
         ]);
 
         $goalsEvaluated = [];
-        if ($request->has('goals') && is_array($request->goals)) {
-            foreach ($request->goals as $goal) {
-                if (!empty($goal['text'] ?? '')) {
+        if (!empty($validated['goals'])) {
+            foreach ($validated['goals'] as $goal) {
+                if (!empty($goal['text'])) {
                     $goalsEvaluated[] = [
                         'text' => $goal['text'],
-                        'percentage' => (int) ($goal['percentage'] ?? 0),
+                        'percentage' => $goal['percentage'] ?? 0
                     ];
                 }
             }
@@ -129,13 +131,20 @@ class DoctorSessionController extends Controller
         $validated['goals_evaluated'] = $goalsEvaluated;
 
         if ($request->hasFile('video')) {
-            $path = $request->file('video')->store('session_videos', 'public');
-            $validated['video_path'] = $path;
+            $paths = [];
+            foreach ($request->file('video') as $file) {
+                $paths[] = $file->store('session_videos', 'public');
+            }
+            $validated['video_path'] = $paths;
             $validated['video_duration'] = '0:45 دقيقة';
         }
 
         if ($request->hasFile('homework_file')) {
-            $validated['homework_file_path'] = $request->file('homework_file')->store('homework_media', 'public');
+            $paths = [];
+            foreach ($request->file('homework_file') as $file) {
+                $paths[] = $file->store('homework_media', 'public');
+            }
+            $validated['homework_file_path'] = $paths;
         }
 
         $validated['whatsapp_notified'] = $request->boolean('whatsapp_notify');
@@ -230,12 +239,7 @@ class DoctorSessionController extends Controller
     private function getSpecialistsList(): array
     {
         $db = Specialist::where('status', 'active')->orderBy('name')->pluck('name')->toArray();
-        return !empty($db) ? $db : [
-            'د. أحمد يسري (أخصائي تخاطب ونطق)',
-            'د. مروة كمال (تكامل حسي وتعديل سلوك)',
-            'د. سارة إبراهيم (تأهيل تخاطب سمعي)',
-            'أ. حسام فؤاد (صعوبات تعلم وتنمية مهارات)',
-        ];
+        return $db;
     }
 
     private function getRoomsList(): array

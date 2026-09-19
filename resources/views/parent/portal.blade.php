@@ -13,7 +13,7 @@
             <!-- بيانات الطفل وصورته وولي الأمر -->
             <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-right">
                 <div class="relative">
-                    <img src="{{ $child->avatar_url }}" alt="{{ $child->name }}" class="w-22 h-22 rounded-3xl object-cover ring-4 ring-purple-100 shadow-md">
+                    <img src="{{ $child->avatar_url }}" alt="{{ $child->name }}" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-purple-100 shadow-md">
                     <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white bg-emerald-500" title="الحالة: نشط"></span>
                 </div>
 
@@ -25,7 +25,7 @@
                     </div>
 
                     <p class="text-xs text-slate-500 font-medium">
-                        مرحباً بك: <strong class="text-slate-800">{{ $child->parent_name }}</strong> ({{ $child->parent_relation }}) • الأخصائي المتابع: <strong class="text-slate-800">{{ $child->main_specialist ?? 'د. أحمد يسري' }}</strong>
+                        مرحباً بك: <strong class="text-slate-800">{{ $child->parent_name }}</strong> ({{ $child->parent_relation }}) • الأخصائي المتابع: <strong class="text-slate-800">{{ $child->main_specialist ?? 'غير محدد' }}</strong>
                     </p>
 
                     <!-- سطور التشخيص المستقلة -->
@@ -67,7 +67,7 @@
         </div>
 
         <!-- إحصائيات سريعة للطفل لولي الأمر -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-medium">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs font-medium">
             <div class="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-1">
                 <span class="text-[10px] font-bold text-purple-700 block">العمر الزمني:</span>
                 <p class="font-black text-slate-800 text-sm">{{ $child->age_text }}</p>
@@ -88,15 +88,31 @@
                 <p class="font-black text-emerald-800 text-sm">{{ round($totalProgress) }}% إتقان</p>
                 <p class="text-[10px] text-emerald-600 font-bold">متوسط تقدم المهارات</p>
             </div>
+            
+            <div class="p-3.5 rounded-2xl bg-rose-50/60 border border-rose-100 space-y-1">
+                @php
+                    $c_schedules = $child->sessionSchedules()->get();
+                    $c_att = $c_schedules->where('attendance_status', 'attended')->count();
+                    $c_exc = $c_schedules->filter(function($s) { return $s->status === 'cancelled' || str_contains($s->notes ?? '', 'اعتذار'); })->count();
+                    $c_abs = max(0, $c_schedules->where('attendance_status', 'absent')->count() - $c_exc);
+                    $c_tot = $c_att + $c_abs + $c_exc;
+                    $c_att_pct = $c_tot > 0 ? round(($c_att / $c_tot) * 100) : 0;
+                    $c_abs_pct = $c_tot > 0 ? round(($c_abs / $c_tot) * 100) : 0;
+                @endphp
+                <span class="text-[10px] font-bold text-rose-700 block">إحصائيات الحضور:</span>
+                <p class="font-black text-slate-800 text-sm text-emerald-600">{{ $c_att_pct }}% حضور</p>
+                <p class="text-[10px] text-rose-600 font-bold">{{ $c_abs_pct }}% غياب</p>
+            </div>
 
             <div class="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-100 space-y-1">
                 <span class="text-[10px] font-bold text-amber-800 block">رصيد باقة الجلسات:</span>
-                <p class="font-black text-amber-900 text-sm">4 متبقية من 12</p>
-                <p class="text-[10px] text-amber-700 font-bold">اشتراك نشط</p>
+                <p class="font-black text-amber-900 text-sm">اشتراك نشط</p>
+                <p class="text-[10px] text-amber-700 font-bold">باقة الجلسات</p>
             </div>
         </div>
 
     </div>
+
 
     <!-- رسائل النجاح إن وجدت -->
     @if(session('success'))
@@ -112,7 +128,14 @@
         
         <!-- الجلسة القادمة المميزة إن وجدت -->
         @php
-            $nextSession = $schedules->where('session_date', '>=', now()->toDateString())->first();
+            $nextSession = $schedules
+                ->where('attendance_status', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('session_date', '>=', now()->toDateString())
+                ->sortBy(function($s) {
+                    return $s->session_date->format('Y-m-d') . ' ' . $s->start_time;
+                })
+                ->first();
         @endphp
 
         @if($nextSession)
@@ -377,13 +400,24 @@
                     </div>
                 </div>
 
-                @if($sess->video_path)
-                <div class="rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
-                    <video controls class="w-full max-h-[380px] bg-black">
-                        <source src="{{ asset('storage/' . $sess->video_path) }}" type="video/mp4">
-                        متصفحك لا يدعم تشغيل الفيديو.
-                    </video>
-                </div>
+                @if($sess->video_path && is_array($sess->video_path))
+                    <div class="space-y-3">
+                        @foreach($sess->video_path as $vPath)
+                            <div class="rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
+                                <video controls class="w-full max-h-[380px] bg-black">
+                                    <source src="{{ asset('storage/' . $vPath) }}" type="video/mp4">
+                                    متصفحك لا يدعم تشغيل الفيديو.
+                                </video>
+                            </div>
+                        @endforeach
+                    </div>
+                @elseif($sess->video_path && is_string($sess->video_path))
+                    <div class="rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md">
+                        <video controls class="w-full max-h-[380px] bg-black">
+                            <source src="{{ asset('storage/' . $sess->video_path) }}" type="video/mp4">
+                            متصفحك لا يدعم تشغيل الفيديو.
+                        </video>
+                    </div>
                 @endif
 
                 <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1 text-xs">
@@ -428,11 +462,19 @@
         </div>
     </div>
 
-    <!-- ==================== تبويب 2: أهداف وخطة طفلي (IEP Goals) ==================== -->
+    <!-- ==================== تبويب 2: الأهداف وخطة طفلي (IEP Goals) ==================== -->
     <div x-show="activeTab === 'goals'" class="space-y-6">
-        <div>
-            <h3 class="font-black text-lg text-slate-800">الأهداف العلاجية المحددة لطفلك (IEP Goals)</h3>
-            <p class="text-xs text-slate-400 font-semibold mt-0.5">تتبع نسب إتقان طفلك للمهارات اللغوية والسلوكية والحركية</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h3 class="font-black text-lg text-slate-800">الأهداف العلاجية المحددة لطفلك (IEP Goals)</h3>
+                <p class="text-xs text-slate-400 font-semibold mt-0.5">تابع نسب إتقان طفلك للمهارات اللغوية والسلوكية والحركية</p>
+            </div>
+            @if($child)
+            <button type="button" @click="$dispatch('open-suggest-goal-modal')" class="px-4 py-2.5 rounded-2xl bg-teal-50 text-teal-700 font-bold text-xs hover:bg-teal-600 hover:text-white border border-teal-100 transition shadow-xs flex items-center justify-center gap-2 shrink-0">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>اقتراح هدف جديد</span>
+            </button>
+            @endif
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -485,7 +527,7 @@
                     <div>
                         <label class="block font-bold text-slate-700 mb-1.5">الجهة المستلمة:</label>
                         <select name="recipient_type" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                            <option value="doctor">الأخصائي المتابع ({{ $child->main_specialist ?? 'د. أحمد يسري' }})</option>
+                            <option value="specialist">الأخصائي المعالج ({{ $child->main_specialist ?? 'غير محدد' }})</option>
                             <option value="center">إدارة المركز العامة والاستقبال</option>
                         </select>
                     </div>
@@ -544,7 +586,7 @@
                 @csrf
                 <input type="hidden" name="child_id" value="{{ $child->id }}">
                 <input type="hidden" name="parent_name" value="{{ $child->parent_name }}">
-                <input type="hidden" name="specialist_name" value="{{ $child->main_specialist ?? 'د. أحمد يسري' }}">
+                <input type="hidden" name="specialist_name" value="{{ $child->main_specialist ?? 'غير محدد' }}">
                 <input type="hidden" name="rating" :value="starRating">
 
                 <!-- النجوم التفاعلية -->
@@ -600,7 +642,41 @@
                 <p class="text-xs text-slate-700 leading-relaxed font-medium">{{ $s->home_exercise }}</p>
                 @endif
 
-                @if($s->homework_file_path)
+                @if($s->homework_file_path && is_array($s->homework_file_path))
+                <div class="mt-3 flex flex-wrap gap-3">
+                    @foreach($s->homework_file_path as $hwPath)
+                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/60 inline-block">
+                        @php
+                            $ext = pathinfo($hwPath, PATHINFO_EXTENSION);
+                            $isImage = in_array(strtolower($ext), ['jpg', 'jpeg', 'png', 'gif']);
+                            $isVideo = in_array(strtolower($ext), ['mp4', 'mov', 'webm']);
+                            $isAudio = in_array(strtolower($ext), ['mp3', 'wav', 'm4a']);
+                            $fileUrl = asset('storage/' . $hwPath);
+                        @endphp
+                        
+                        @if($isImage)
+                            <a href="{{ $fileUrl }}" target="_blank">
+                                <img src="{{ $fileUrl }}" class="w-full max-w-sm rounded-xl object-cover shadow-sm" alt="مرفق الواجب">
+                            </a>
+                        @elseif($isVideo)
+                            <video controls class="w-full max-w-sm rounded-xl shadow-sm">
+                                <source src="{{ $fileUrl }}" type="video/{{ $ext === 'mov' ? 'mp4' : $ext }}">
+                                متصفحك لا يدعم تشغيل الفيديو.
+                            </video>
+                        @elseif($isAudio)
+                            <audio controls class="w-full max-w-sm">
+                                <source src="{{ $fileUrl }}" type="audio/{{ $ext === 'm4a' ? 'mp4' : $ext }}">
+                                متصفحك لا يدعم تشغيل الصوت.
+                            </audio>
+                        @else
+                            <a href="{{ $fileUrl }}" target="_blank" class="flex items-center gap-2 text-xs font-bold text-teal-600 hover:underline">
+                                <i class="fa-solid fa-download"></i> تحميل المرفق
+                            </a>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+                @elseif($s->homework_file_path && is_string($s->homework_file_path))
                 <div class="mt-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/60 inline-block">
                     @php
                         $ext = pathinfo($s->homework_file_path, PATHINFO_EXTENSION);
@@ -875,6 +951,56 @@ function parentPortalCalendarApp() {
     }
 }
 </script>
+
+@if($child)
+<form id="suggest-goal-form" action="{{ route('parent.message.store') }}" method="POST" class="hidden">
+    @csrf
+    <input type="hidden" name="child_id" value="{{ $child->id }}">
+    <input type="hidden" name="recipient_type" value="specialist">
+    <input type="hidden" name="parent_name" value="ولي أمر {{ $child->name }}">
+    <input type="hidden" name="subject" value="اقتراح هدف علاجي جديد">
+    <textarea id="suggest-goal-text" name="message"></textarea>
+</form>
+
+<script>
+    document.addEventListener('open-suggest-goal-modal', function() {
+        Swal.fire({
+            title: 'اقتراح هدف علاجي جديد',
+            text: 'اكتب الهدف الذي تود إضافته لخطة طفلك وسيقوم الأخصائي بمراجعته واعتماده وإبلاغك.',
+            input: 'textarea',
+            inputPlaceholder: 'مثال: أريد من طفلي أن يتعلم كيف يعبر عن جوعه بكلمات واضحة...',
+            inputAttributes: {
+                'aria-label': 'Type your message here'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'إرسال للأخصائي',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#0d9488',
+            showLoaderOnConfirm: true,
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'text-lg font-black text-slate-800 font-cairo',
+                htmlContainer: 'text-xs text-slate-500 font-medium font-cairo',
+                input: 'font-cairo text-sm p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white',
+                confirmButton: 'rounded-xl px-6 py-2.5 font-bold text-xs',
+                cancelButton: 'rounded-xl px-6 py-2.5 font-bold text-xs'
+            },
+            preConfirm: (text) => {
+                if (!text) {
+                    Swal.showValidationMessage('يرجى كتابة الهدف أولاً')
+                }
+                return text;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('suggest-goal-text').value = result.value;
+                document.getElementById('suggest-goal-form').submit();
+            }
+        });
+    });
+</script>
+@endif
+
 @endpush
 @endsection
 

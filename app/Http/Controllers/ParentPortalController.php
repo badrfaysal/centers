@@ -43,7 +43,12 @@ class ParentPortalController extends Controller
         $schedules = $child ? $child->sessionSchedules()->orderBy('day_of_week')->orderBy('start_time')->get() : collect();
         $iepGoals = [];
         if ($child) {
-            $latestSession = $child->therapySessions()->whereNotNull('goals_evaluated')->latest('session_date')->first();
+            // Find the latest session that has non-empty goals
+            $latestSession = clone $child->therapySessions();
+            $latestSession = collect($latestSession->get())->filter(function($s) {
+                return !empty($s->goals_evaluated) && is_array($s->goals_evaluated) && count($s->goals_evaluated) > 0;
+            })->sortByDesc('session_date')->first();
+            
             if ($latestSession && is_array($latestSession->goals_evaluated)) {
                 foreach ($latestSession->goals_evaluated as $goal) {
                     if (is_array($goal)) {
@@ -140,9 +145,13 @@ class ParentPortalController extends Controller
      */
     public function storeMessage(Request $request)
     {
+        if ($request->recipient_type === 'doctor') {
+            $request->merge(['recipient_type' => 'specialist']);
+        }
+
         $validated = $request->validate([
             'child_id'        => 'required|exists:children,id',
-            'recipient_type'  => 'required|in:doctor,center',
+            'recipient_type'  => 'required|in:specialist,center',
             'parent_name'     => 'required|string|max:100',
             'subject'         => 'nullable|string|max:150',
             'message'         => 'required|string|max:2000',

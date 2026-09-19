@@ -41,14 +41,7 @@ class BookingController extends Controller
 
         // قائمة الأخصائيين والغرف للمودال
         $specialists = Specialist::where('status', 'active')->orderBy('name')->get();
-        $rooms = [
-            'غرفة التخاطب 1',
-            'غرفة التخاطب 2',
-            'غرفة التكامل الحسي Sensory Room',
-            'غرفة تنمية المهارات وتعديل السلوك',
-            'غرفة العلاج الوظيفي OT Room',
-            'غرفة مقاييس واختبارات الذكاء',
-        ];
+        $rooms = \App\Http\Controllers\SettingController::getDropdownList('rooms');
 
         return view('bookings.index', compact(
             'bookings',

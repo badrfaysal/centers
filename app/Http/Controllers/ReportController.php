@@ -85,7 +85,8 @@ class ReportController extends Controller
         $childrenAbsence = [];
         $allChildren = \App\Models\Child::all();
         foreach ($allChildren as $child) {
-            $lastSession = \App\Models\TherapySession::where('child_id', $child->id)
+            $lastSession = \App\Models\SessionSchedule::where('child_id', $child->id)
+                ->where('attendance_status', 'attended')
                 ->where('session_date', '<=', Carbon::now()->endOfDay())
                 ->orderBy('session_date', 'desc')
                 ->first();

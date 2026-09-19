@@ -32,6 +32,8 @@ class TherapySession extends Model
         'session_date' => 'date',
         'goals_evaluated' => 'array',
         'whatsapp_notified' => 'boolean',
+        'video_path' => 'array',
+        'homework_file_path' => 'array',
     ];
 
     public function child(): BelongsTo

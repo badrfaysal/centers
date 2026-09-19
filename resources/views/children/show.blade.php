@@ -178,9 +178,14 @@
                 return $s->attendance_status === 'absent' && ($s->status === 'cancelled' || str_contains($s->notes ?? '', 'اعتذار'));
             })->count();
             $absentCount = max(0, $absentCount);
+            
+            $totalStats = $attendedCount + $absentCount + $excusedCount;
+            $attPct = $totalStats > 0 ? round(($attendedCount / $totalStats) * 100) : 0;
+            $absPct = $totalStats > 0 ? round(($absentCount / $totalStats) * 100) : 0;
+            $excPct = $totalStats > 0 ? round(($excusedCount / $totalStats) * 100) : 0;
         @endphp
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs font-medium">
-            
+
             <!-- 1. مقارنة العمر الزمني والعقلي -->
             <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                 <span class="text-[10px] font-bold text-slate-400 block">العمر (زمني / عقلي):</span>
@@ -205,12 +210,12 @@
             </div>
 
             <!-- 4. إحصائيات الحضور -->
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                <span class="text-[10px] font-bold text-slate-400 block">إحصائيات الحضور:</span>
-                <div class="flex items-center justify-between font-black text-sm px-1 pt-0.5">
-                    <span class="text-emerald-600 flex flex-col items-center gap-0.5 leading-none" title="حضر">{{ $attendedCount }}<span class="text-[9px] text-emerald-500 font-bold">حضر</span></span>
-                    <span class="text-rose-500 flex flex-col items-center gap-0.5 leading-none" title="غاب">{{ $absentCount }}<span class="text-[9px] text-rose-400 font-bold">غاب</span></span>
-                    <span class="text-amber-500 flex flex-col items-center gap-0.5 leading-none" title="اعتذر">{{ $excusedCount }}<span class="text-[9px] text-amber-400 font-bold">اعتذر</span></span>
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1 relative group">
+                <span class="text-xs font-bold text-slate-500 block">إحصائيات الحضور (إجمالي: {{ $totalStats }}):</span>
+                <div class="flex items-center justify-between font-black text-base px-1 pt-0.5 mt-1">
+                    <span class="text-emerald-600 flex flex-col items-center gap-1 leading-none" title="حضر">{{ $attendedCount }}<span class="text-[10px] text-emerald-500 font-bold">حضر ({{ $attPct }}%)</span></span>
+                    <span class="text-rose-500 flex flex-col items-center gap-1 leading-none" title="غاب">{{ $absentCount }}<span class="text-[10px] text-rose-400 font-bold">غاب ({{ $absPct }}%)</span></span>
+                    <span class="text-amber-500 flex flex-col items-center gap-1 leading-none" title="اعتذر">{{ $excusedCount }}<span class="text-[10px] text-amber-400 font-bold">اعتذر ({{ $excPct }}%)</span></span>
                 </div>
             </div>
 

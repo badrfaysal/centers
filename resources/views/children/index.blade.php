@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'ملفات الأطفال')
 
@@ -124,6 +124,7 @@
                         <th class="py-4 px-4">ولي الأمر والتواصل</th>
                         <th class="py-4 px-4">التشخيصات المستقلة</th>
                         <th class="py-4 px-4">الأخصائي المعالج</th>
+                        <th class="py-4 px-4 text-center">إحصائيات الحضور</th>
                         <th class="py-4 px-4">الحالة</th>
                         <th class="py-4 px-4 text-left">إجراءات</th>
                     </tr>
@@ -192,6 +193,41 @@
                         <!-- الأخصائي -->
                         <td class="py-4 px-4 text-xs">
                             <p class="font-bold text-slate-700">{{ $child->main_specialist ?? 'غير محدد' }}</p>
+                        </td>
+
+                        <!-- إحصائيات الحضور -->
+                        <td class="py-4 px-4 text-xs">
+                            @php
+                                $c_schedules = $child->sessionSchedules()->get();
+                                $c_att = $c_schedules->where('attendance_status', 'attended')->count();
+                                $c_exc = $c_schedules->filter(function($s) { return $s->status === 'cancelled' || str_contains($s->notes ?? '', 'اعتذار'); })->count();
+                                $c_abs = max(0, $c_schedules->where('attendance_status', 'absent')->count() - $c_exc);
+                                $c_tot = $c_att + $c_abs + $c_exc;
+                                $c_att_pct = $c_tot > 0 ? round(($c_att / $c_tot) * 100) : 0;
+                                $c_abs_pct = $c_tot > 0 ? round(($c_abs / $c_tot) * 100) : 0;
+                            @endphp
+                            @if($c_tot > 0)
+                                <div class="flex flex-col gap-1 items-center">
+                                    <div class="flex items-center gap-1.5 w-full max-w-[80px]" title="حضور">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                        <div class="w-full bg-slate-100 rounded-full h-2">
+                                            <div class="bg-emerald-500 h-2 rounded-full" style="width: {{ $c_att_pct }}%"></div>
+                                        </div>
+                                        <span class="font-bold text-slate-700 text-[10px] w-8">{{ $c_att_pct }}%</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 w-full max-w-[80px]" title="غياب">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                                        <div class="w-full bg-slate-100 rounded-full h-2">
+                                            <div class="bg-rose-500 h-2 rounded-full" style="width: {{ $c_abs_pct }}%"></div>
+                                        </div>
+                                        <span class="font-bold text-slate-700 text-[10px] w-8">{{ $c_abs_pct }}%</span>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="text-center">
+                                    <span class="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-lg">لا يوجد</span>
+                                </div>
+                            @endif
                         </td>
 
                         <!-- الحالة -->

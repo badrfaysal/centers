@@ -125,29 +125,18 @@ class ChildController extends Controller
                     'notes' => $s->clinical_notes,
                     'home_exercise' => $s->home_exercise,
                     'has_video' => !empty($s->video_path),
-                    'video_path' => $s->video_path ? asset('storage/' . $s->video_path) : null,
+                    'video_path' => is_array($s->video_path) 
+                        ? (count($s->video_path) > 0 ? asset('storage/' . $s->video_path[0]) : null) 
+                        : ($s->video_path ? asset('storage/' . $s->video_path) : null),
+                    'all_videos' => is_array($s->video_path) 
+                        ? array_map(function($p) { return asset('storage/' . $p); }, $s->video_path)
+                        : ($s->video_path ? [asset('storage/' . $s->video_path)] : []),
                     'video_duration' => $s->video_duration ?? '0:30 دقيقة',
                     'goals' => $s->goals_evaluated ?? [],
                 ];
             }
-        } else {
-            $recentSessions = [
-                [
-                    'date' => '20 أغسطس 2026',
-                    'time' => '04:00 م - 04:45 م',
-                    'room' => 'غرفة التخاطب 1',
-                    'specialist' => $child->main_specialist ?? 'د. أحمد يسري',
-                    'mood' => 'ممتاز ومتعاون ومتحمس',
-                    'mood_color' => 'emerald',
-                    'notes' => 'استجاب الطفل بشكل رائع للتدريب على صوت الكاف بالمرآة مع استخدام التعزيز الإيجابي.',
-                    'home_exercise' => 'تكرار لعبة الكروت ونطق (كتاب - كرة) 5 مرات مع ولي الأمر قبل النوم.',
-                    'has_video' => false,
-                    'video_path' => null,
-                    'video_duration' => null,
-                    'goals' => ['نطق صوت حرف /ك/ في أول الكلمة'],
-                ]
-            ];
         }
+        
         $iepGoals = [];
         $latestSession = $child->therapySessions()->whereNotNull('goals_evaluated')->latest('session_date')->first();
         if ($latestSession && is_array($latestSession->goals_evaluated)) {
@@ -177,24 +166,15 @@ class ChildController extends Controller
             }
         }
 
-        $parentNotes = [
-            [
-                'author' => $child->parent_name,
-                'relation' => $child->parent_relation,
-                'date' => 'منذ يومين',
-                'text' => 'لاحظنا في البيت إنه بدأ يقول كلمة "كورة" بوضوح لما يلعب مع أخوه، شكراً جزيلاً للدكتور المتابع!',
-                'reply' => 'خبر رائع جداً ومؤشر ممتاز على استجابته السريعة! سنركز في الجلسة القادمة على دمج الكلمة في جملة.',
-                'doctor' => $child->main_specialist ?? 'د. أحمد يسري'
-            ]
-        ];
+        $parentNotes = [];
 
         $packageInfo = [
-            'name' => 'باقة التأهيل الشامل المكثفة (12 جلسة)',
-            'total_sessions' => 12,
-            'completed_sessions' => count($recentSessions),
-            'remaining_sessions' => max(0, 12 - count($recentSessions)),
-            'expiry_date' => '2026-09-15',
-            'status' => 'active'
+            'name' => 'باقة الجلسات',
+            'total_sessions' => 0,
+            'completed_sessions' => 0,
+            'remaining_sessions' => 0,
+            'expiry_date' => null,
+            'status' => 'inactive'
         ];
 
         return view('children.show', compact('child', 'iepGoals', 'recentSessions', 'parentNotes', 'packageInfo'));
@@ -220,20 +200,8 @@ class ChildController extends Controller
                     'goals' => $s->goals_evaluated ?? [],
                 ];
             }
-        } else {
-            $recentSessions = [
-                [
-                    'date' => '2026-08-20',
-                    'time' => '04:00 م',
-                    'room' => 'غرفة التخاطب 1',
-                    'specialist' => $child->main_specialist ?? 'د. أحمد يسري',
-                    'mood' => 'ممتاز ومتعاون ومتحمس',
-                    'notes' => 'استجاب الطفل بشكل رائع للتدريب على صوت الكاف بالمرآة مع استخدام التعزيز الإيجابي.',
-                    'home_exercise' => 'تكرار لعبة الكروت ونطق (كتاب - كرة) 5 مرات مع ولي الأمر قبل النوم.',
-                    'goals' => ['نطق صوت حرف /ك/ في أول الكلمة'],
-                ]
-            ];
         }
+        
         $iepGoals = [];
         $latestSession = $child->therapySessions()->whereNotNull('goals_evaluated')->latest('session_date')->first();
         if ($latestSession && is_array($latestSession->goals_evaluated)) {

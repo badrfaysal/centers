@@ -21,7 +21,150 @@
     mood: 'ممتاز ومتعاون ومتحمس',
     goals: [],
     newGoalText: '',
-    videoFileName: null,
+    clinicalNotes: `{!! old('clinical_notes', '') !!}`,
+    isRecording: false,
+    interimText: '',
+    isHearingAudio: false,
+    recognition: null,
+    homeworkFiles: [],
+    videoFiles: [],
+    isSubmitting: false,
+    
+    toggleRecording() {
+        if (this.isRecording) {
+            this.stopRecording();
+        } else {
+            this.startRecording();
+        }
+    },
+    startRecording() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            Swal.fire({
+                icon: 'error',
+                title: 'غير مدعوم',
+                text: 'متصفحك لا يدعم ميزة الإملاء الصوتي. يرجى استخدام متصفح Google Chrome.',
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#0d9488'
+            });
+            return;
+        }
+        
+        this.recognition = new SpeechRecognition();
+        this.recognition.lang = 'ar-EG';
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        
+        this.recognition.onstart = () => {
+            this.isRecording = true;
+            this.interimText = '';
+            this.isHearingAudio = false;
+        };
+        
+        this.recognition.onaudiostart = () => {
+            this.isHearingAudio = true;
+        };
+
+        this.recognition.onresult = (event) => {
+            let finalTranscript = '';
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            this.interimText = interimTranscript;
+            
+            if (finalTranscript) {
+                if (this.clinicalNotes && !this.clinicalNotes.endsWith(' ') && !this.clinicalNotes.endsWith('\n')) {
+                    this.clinicalNotes += ' ';
+                }
+                this.clinicalNotes += finalTranscript;
+            }
+        };
+        
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            if (event.error === 'network') {
+                Swal.fire({ icon: 'warning', title: 'خطأ في الشبكة', text: 'الإملاء الصوتي يتطلب اتصالاً مستقراً بالإنترنت.' });
+                this.stopRecording();
+            } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                Swal.fire({ icon: 'error', title: 'تم حظر الميكروفون', text: 'يرجى إعطاء صلاحية الميكروفون للمتصفح.' });
+                this.stopRecording();
+            } else if (event.error !== 'no-speech') {
+                this.stopRecording();
+            }
+        };
+        
+        this.recognition.onend = () => {
+            if (this.isRecording) {
+                try {
+                    this.recognition.start();
+                } catch(e) {
+                    this.isRecording = false;
+                }
+            } else {
+                this.isRecording = false;
+                this.interimText = '';
+                this.isHearingAudio = false;
+            }
+        };
+        
+        try {
+            this.recognition.start();
+        } catch(e) {
+            console.error(e);
+        }
+    },
+    stopRecording() {
+        this.isRecording = false;
+        if (this.recognition) {
+            this.recognition.stop();
+        }
+        this.interimText = '';
+        this.isHearingAudio = false;
+    },
+    
+    handleHomeworkChange(event) {
+        this.homeworkFiles = Array.from(event.target.files).map((file, i) => ({
+            id: i,
+            name: file.name,
+            size: (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        }));
+    },
+    removeHomeworkFile(index) {
+        const dt = new DataTransfer();
+        const input = document.getElementById('homeworkFileInput');
+        const files = input.files;
+        for (let i = 0; i < files.length; i++) {
+            if (i !== index) dt.items.add(files[i]);
+        }
+        input.files = dt.files;
+        this.handleHomeworkChange({target: input});
+    },
+
+    handleVideoChange(event) {
+        this.videoFiles = Array.from(event.target.files).map((file, i) => ({
+            id: i,
+            name: file.name,
+            size: (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        }));
+    },
+    removeVideoFile(index) {
+        const dt = new DataTransfer();
+        const input = document.getElementById('videoFileInput');
+        const files = input.files;
+        for (let i = 0; i < files.length; i++) {
+            if (i !== index) dt.items.add(files[i]);
+        }
+        input.files = dt.files;
+        this.handleVideoChange({target: input});
+    },
+
     addGoal() {
         if (this.newGoalText.trim()) {
             this.goals.push({ text: this.newGoalText.trim(), percentage: 0, fromPrevious: false });
@@ -45,12 +188,6 @@
             }));
         } else {
             this.goals = [];
-        }
-    },
-    handleVideoChange(event) {
-        const file = event.target.files[0];
-        if (file) {
-            this.videoFileName = file.name + ' (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB)';
         }
     },
     get currentChild() {
@@ -92,9 +229,28 @@
     </div>
     @endif
 
-    <!-- نموذج تسجيل الجلسة الرئيسي -->
-    <form action="{{ route('doctor.sessions.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+    <!-- نموذج إضافة الجلسة التفصيلي -->
+    <form action="{{ route('doctor.sessions.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8" @submit="isSubmitting = true">
         @csrf
+
+        <!-- Overlay Loading Animation -->
+        <div x-show="isSubmitting" class="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm" x-transition>
+            <div class="flex flex-col items-center bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full text-center">
+                <!-- Custom CSS Spinner -->
+                <div class="relative w-20 h-20 mb-6">
+                    <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-teal-500 rounded-full border-t-transparent animate-spin"></div>
+                    <i class="fa-solid fa-cloud-arrow-up absolute inset-0 flex items-center justify-center text-teal-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 mb-2">جاري رفع الملفات...</h3>
+                <p class="text-sm font-bold text-slate-500 mb-4">يرجى الانتظار، قد يستغرق رفع الفيديوهات بعض الوقت حسب حجمها وسرعة الإنترنت.</p>
+                
+                <div class="w-full bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
+                    <div class="bg-teal-500 h-2 rounded-full w-full animate-pulse"></div>
+                </div>
+                <p class="text-[10px] text-teal-600 font-bold">لا تقم بإغلاق هذه الصفحة</p>
+            </div>
+        </div>
 
         <!-- ==================== 1. البحث واختيار الطفل والبطاقة السريعة ==================== -->
         <div class="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm space-y-6">
@@ -346,10 +502,32 @@
 
             <!-- تقرير الأخصائي المفصل -->
             <div class="space-y-2">
-                <label class="block font-bold text-slate-700 text-xs">
-                    ملاحظات وتقرير الأخصائي المفصل عن الجلسة <span class="text-rose-500">*</span>
-                </label>
-                <textarea name="clinical_notes" required rows="4" placeholder="اكتب ما تم إنجازه مع الطفل بالتفصيل، الاستجابات، الصعوبات، والملاحظات السلوكية أثناء التدريب..." class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-medium text-xs leading-relaxed"></textarea>
+                <div class="flex items-center justify-between">
+                    <label class="block font-bold text-slate-700 text-xs">
+                        ملاحظات وتقرير الأخصائي المفصل عن الجلسة <span class="text-rose-500">*</span>
+                    </label>
+                    <button type="button" @click="toggleRecording()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition shadow-xs" :class="isRecording ? 'bg-rose-100 text-rose-600 animate-pulse border border-rose-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'">
+                        <i class="fa-solid fa-microphone"></i>
+                        <span x-text="isRecording ? 'جاري الاستماع... اضغط للإيقاف' : 'إملاء صوتي'"></span>
+                    </button>
+                </div>
+                <div class="relative">
+                    <textarea name="clinical_notes" x-model="clinicalNotes" required rows="4" placeholder="اكتب أو املِ ما تم إنجازه مع الطفل بالتفصيل، الاستجابات، الصعوبات، والملاحظات السلوكية أثناء التدريب..." class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-medium text-xs leading-relaxed" :class="isRecording ? 'border-rose-300 ring-2 ring-rose-100 bg-white' : ''"></textarea>
+                    
+                    <div x-show="interimText" class="absolute bottom-10 left-3 right-3 p-2 bg-slate-800/80 text-white rounded-xl text-xs backdrop-blur-sm shadow-sm" x-transition>
+                        <span class="opacity-75">جاري الاستماع: </span>
+                        <span x-text="interimText" class="font-bold"></span>
+                    </div>
+
+                    <!-- Recording Indicator -->
+                    <div x-show="isRecording" class="absolute bottom-3 left-3 flex items-center gap-1.5 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                        </span>
+                        <span class="text-[9px] font-bold text-rose-600">يتحدث الآن...</span>
+                    </div>
+                </div>
             </div>
 
             <!-- التمرين المنزلي للأهل -->
@@ -368,12 +546,29 @@
                         <span>مرفق الواجب (صورة توضيحية أو مقطع صوتي/فيديو يشرح التمرين للأهل):</span>
                     </label>
                     <div class="relative border-2 border-dashed border-amber-300 rounded-2xl p-4 text-center bg-white hover:bg-amber-50 transition cursor-pointer">
-                        <input type="file" name="homework_file" accept="image/*,video/*,audio/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-                        <div class="flex flex-col items-center gap-2">
+                        <input type="file" id="homeworkFileInput" name="homework_file[]" multiple accept="image/*,video/*,audio/*" @change="handleHomeworkChange" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        <div class="flex flex-col items-center gap-2 pointer-events-none">
                             <i class="fa-solid fa-cloud-arrow-up text-xl text-amber-500"></i>
-                            <span class="text-xs font-bold text-amber-800">اضغط لرفع ملف توضيحي للواجب المنزلي (اختياري)</span>
+                            <span class="text-xs font-bold text-amber-800">اضغط لرفع ملفات توضيحية للواجب المنزلي (اختياري)</span>
                         </div>
                     </div>
+                    
+                    <template x-if="homeworkFiles.length > 0">
+                        <div class="mt-3 space-y-2">
+                            <template x-for="(file, index) in homeworkFiles" :key="index">
+                                <div class="p-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <i class="fa-solid fa-paperclip text-amber-600"></i>
+                                        <span x-text="file.name" class="truncate"></span>
+                                        <span x-text="file.size" class="text-[10px] text-amber-600/70"></span>
+                                    </div>
+                                    <button type="button" @click="removeHomeworkFile(index)" class="text-rose-500 hover:text-rose-700 bg-white rounded-lg px-2 py-1 shadow-xs shrink-0">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -391,15 +586,28 @@
                 
                 <!-- مربع رفع الفيديو -->
                 <div class="border-2 border-dashed border-purple-200 rounded-3xl p-6 text-center bg-purple-50/30 hover:bg-purple-50/70 transition relative">
-                    <input type="file" name="video" accept="video/*,image/*" @change="handleVideoChange" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-purple-500 mb-2"></i>
-                    <p class="font-bold text-xs text-slate-700">اضغط لرفع مقطع فيديو أو صورة للطفل في الجلسة</p>
-                    <p class="text-[10px] text-slate-400 mt-1">يدعم MP4, MOV (مقاطع توثيق الإنجاز 10 - 60 ثانية)</p>
+                    <input type="file" id="videoFileInput" name="video[]" multiple accept="video/*,image/*" @change="handleVideoChange" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                    <div class="pointer-events-none">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-purple-500 mb-2"></i>
+                        <p class="font-bold text-xs text-slate-700">اضغط لرفع مقاطع فيديو أو صور للطفل في الجلسة</p>
+                        <p class="text-[10px] text-slate-400 mt-1">يدعم MP4, MOV (مقاطع توثيق الإنجاز 10 - 60 ثانية)</p>
+                        <p class="text-[9px] text-rose-500 mt-2 font-bold bg-rose-50 inline-block px-2 py-1 rounded-md">💡 نصيحة: لتسريع الرفع، يفضل تصوير الفيديو بجودة متوسطة (720p) بدلاً من 4K</p>
+                    </div>
 
-                    <template x-if="videoFileName">
-                        <div class="mt-3 p-2 bg-purple-100 text-purple-900 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                            <span x-text="videoFileName"></span>
+                    <template x-if="videoFiles.length > 0">
+                        <div class="mt-4 space-y-2 relative z-10">
+                            <template x-for="(file, index) in videoFiles" :key="index">
+                                <div class="p-2 bg-purple-100 text-purple-900 rounded-xl text-xs font-bold flex items-center justify-between gap-2 text-right shadow-xs">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <i class="fa-solid fa-file-video text-purple-600"></i>
+                                        <span x-text="file.name" class="truncate"></span>
+                                        <span x-text="file.size" class="text-[10px] text-purple-600/70"></span>
+                                    </div>
+                                    <button type="button" @click="removeVideoFile(index)" class="text-rose-500 hover:text-rose-700 bg-white rounded-lg px-2 py-1 shadow-xs shrink-0 relative z-20">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            </template>
                         </div>
                     </template>
                 </div>
@@ -441,4 +649,31 @@
 
 </div>
 @endsection
+
+@push('scripts')
+@if($errors->any())
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let errorHtml = '<ul class="text-xs text-rose-600 text-right space-y-1 list-disc list-inside mt-2">';
+        @foreach($errors->all() as $error)
+            errorHtml += '<li>{{ $error }}</li>';
+        @endforeach
+        errorHtml += '</ul>';
+
+        Swal.fire({
+            icon: 'error',
+            title: 'يوجد خطأ في البيانات!',
+            html: errorHtml,
+            confirmButtonText: 'حسناً',
+            confirmButtonColor: '#0d9488',
+            customClass: {
+                popup: 'rounded-3xl',
+                title: 'text-lg font-black text-slate-800 font-cairo',
+                htmlContainer: 'font-cairo'
+            }
+        });
+    });
+</script>
+@endif
+@endpush
 

@@ -202,16 +202,44 @@
             </div>
         </div>
 
-        <!-- Absence Days Table -->
-        <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
-                    <i class="fa-solid fa-calendar-xmark"></i>
+        <!-- Absence Days Table (AlpineJS dynamic) -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-200" 
+             x-data="{
+                allData: {{ json_encode($childrenAbsence) }},
+                search: '',
+                currentPage: 1,
+                perPage: 10,
+                get filteredData() {
+                    if (this.search === '') return this.allData;
+                    return this.allData.filter(item => item.child_name.toLowerCase().includes(this.search.toLowerCase()));
+                },
+                get totalPages() {
+                    return Math.max(1, Math.ceil(this.filteredData.length / this.perPage));
+                },
+                get paginatedData() {
+                    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+                    let start = (this.currentPage - 1) * this.perPage;
+                    return this.filteredData.slice(start, start + this.perPage);
+                },
+                nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; },
+                prevPage() { if (this.currentPage > 1) this.currentPage--; }
+             }">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
+                        <i class="fa-solid fa-calendar-xmark"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-slate-800">أيام الغياب للأطفال (منذ آخر جلسة حضور)</h2>
                 </div>
-                <h2 class="text-lg font-bold text-slate-800">أيام الغياب للأطفال (منذ آخر جلسة حضور)</h2>
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-64">
+                    <input type="text" x-model="search" placeholder="بحث باسم الطفل..." class="w-full text-sm pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-3.5 text-slate-400"></i>
+                </div>
             </div>
             
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto min-h-[300px]">
                 <table class="w-full text-sm text-right">
                     <thead class="text-xs text-slate-500 bg-slate-50 uppercase rounded-t-xl">
                         <tr>
@@ -221,37 +249,31 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse(array_slice($childrenAbsence, 0, 10) as $absence)
-                        <tr class="bg-white border-b border-slate-100 hover:bg-slate-50">
-                            <td class="px-6 py-4 font-bold text-slate-800">
-                                {{ $absence['child_name'] }}
-                            </td>
-                            <td class="px-6 py-4 text-slate-500">
-                                {{ $absence['last_session_date'] }}
-                            </td>
-                            <td class="px-6 py-4 font-bold {{ $absence['days_absent'] === -1 || $absence['days_absent'] > 14 ? 'text-rose-600' : 'text-amber-600' }}">
-                                @if($absence['days_absent'] === -1)
-                                    لم يحضر أبداً
-                                @else
-                                    {{ $absence['days_absent'] }} يوم
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
+                        <template x-for="absence in paginatedData" :key="absence.child_name">
+                            <tr class="bg-white border-b border-slate-100 hover:bg-slate-50">
+                                <td class="px-6 py-4 font-bold text-slate-800" x-text="absence.child_name"></td>
+                                <td class="px-6 py-4 text-slate-500" x-text="absence.last_session_date"></td>
+                                <td class="px-6 py-4 font-bold" :class="absence.days_absent === -1 || absence.days_absent > 14 ? 'text-rose-600' : 'text-amber-600'" x-text="absence.days_absent === -1 ? 'لم يحضر أبداً' : absence.days_absent + ' يوم'"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="paginatedData.length === 0">
                             <td colspan="3" class="px-6 py-8 text-center text-slate-500">
-                                لا يوجد بيانات غياب مسجلة
+                                لا يوجد بيانات غياب مطابقة للبحث
                             </td>
                         </tr>
-                        @endforelse
                     </tbody>
                 </table>
             </div>
-            @if(count($childrenAbsence) > 10)
-                <div class="mt-4 text-center">
-                    <span class="text-xs text-slate-400">يتم عرض أكثر 10 أطفال انقطاعاً عن الجلسات فقط.</span>
+
+            <!-- Pagination Controls -->
+            <div class="mt-4 flex items-center justify-between" x-show="totalPages > 1">
+                <span class="text-xs text-slate-500 font-bold">صفحة <span x-text="currentPage"></span> من <span x-text="totalPages"></span></span>
+                <div class="flex items-center gap-2">
+                    <button @click="prevPage()" :disabled="currentPage === 1" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all" :class="currentPage === 1 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'">السابق</button>
+                    <button @click="nextPage()" :disabled="currentPage === totalPages" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all" :class="currentPage === totalPages ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'">التالي</button>
                 </div>
-            @endif
+            </div>
+
         </div>
     </div>
 

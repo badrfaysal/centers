@@ -1,6 +1,38 @@
 @extends('layouts.app')
 
-@section('title', 'قائمة الانتظار')
+@section('title', 'قائمة الدور (الانتظار)')
+
+@push('styles')
+<style>
+    .animated-bg {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 24px;
+        min-height: 60vh;
+    }
+    .bg-icon {
+        position: absolute;
+        color: rgba(15, 23, 42, 0.03);
+        animation: float 20s infinite linear;
+        z-index: 0;
+    }
+    .bg-icon:nth-child(1) { top: 5%; left: 5%; font-size: 10rem; animation-duration: 25s; }
+    .bg-icon:nth-child(2) { top: 40%; right: 5%; font-size: 15rem; animation-duration: 35s; animation-direction: reverse; }
+    .bg-icon:nth-child(3) { bottom: 5%; left: 30%; font-size: 12rem; animation-duration: 30s; }
+    
+    @keyframes float {
+        0% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-30px) rotate(15deg); }
+        100% { transform: translateY(0) rotate(0deg); }
+    }
+    
+    .queue-card {
+        position: relative;
+        z-index: 1;
+    }
+</style>
+@endpush
 
 @section('content')
 <div x-data="{ showAddModal: false }" class="space-y-6">
@@ -8,16 +40,24 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
         <div class="flex items-center gap-4">
-            <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-inner">
-                <i class="fa-solid fa-hourglass-half text-2xl"></i>
+            <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-inner">
+                <i class="fa-solid fa-list-ol text-2xl"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">قائمة الانتظار (Waiting List)</h1>
-                <p class="text-slate-500 text-sm mt-1">إدارة الأطفال المنتظرين دورهم لكل أخصائي</p>
+                <h1 class="text-2xl font-bold text-slate-800">قائمة الدور (الانتظار)</h1>
+                <p class="text-slate-500 text-sm mt-1">ترتيب دخول الأطفال للجلسات عند الأخصائيين</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <button @click="showAddModal = true" class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/30 flex items-center gap-2">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <form action="{{ route('waitlists.index') }}" method="GET" class="flex-1 md:w-48">
+                <select name="specialist_id" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none" onchange="this.form.submit()">
+                    <option value="all">كل الأخصائيين</option>
+                    @foreach($specialists as $specialist)
+                        <option value="{{ $specialist->id }}" {{ request('specialist_id') == $specialist->id ? 'selected' : '' }}>{{ $specialist->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+            <button @click="showAddModal = true" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/30 flex items-center gap-2 shrink-0">
                 <i class="fa-solid fa-plus"></i>
                 إضافة للقائمة
             </button>
@@ -38,103 +78,76 @@
         </div>
     @endif
 
-    <!-- Main Table View -->
-    <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        
-        <!-- Filters -->
-        <div class="p-4 border-b border-slate-100 bg-slate-50">
-            <form action="{{ route('waitlists.index') }}" method="GET" class="flex items-center gap-3 w-full max-w-sm">
-                <select name="specialist_id" class="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none" onchange="this.form.submit()">
-                    <option value="all">كل الأخصائيين</option>
-                    @foreach($specialists as $specialist)
-                        <option value="{{ $specialist->id }}" {{ request('specialist_id') == $specialist->id ? 'selected' : '' }}>{{ $specialist->name }}</option>
-                    @endforeach
-                </select>
-            </form>
-        </div>
+    <!-- Queue Board -->
+    <div class="animated-bg p-6 border border-slate-200 shadow-inner">
+        <i class="fa-solid fa-users bg-icon"></i>
+        <i class="fa-solid fa-clipboard-list bg-icon"></i>
+        <i class="fa-regular fa-clock bg-icon"></i>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-right text-sm">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-500">
-                        <th class="px-6 py-4 font-semibold">الدور</th>
-                        <th class="px-6 py-4 font-semibold">اسم الطفل</th>
-                        <th class="px-6 py-4 font-semibold">الأخصائي المطلوب</th>
-                        <th class="px-6 py-4 font-semibold">الأولوية</th>
-                        <th class="px-6 py-4 font-semibold">تاريخ الإضافة</th>
-                        <th class="px-6 py-4 font-semibold">ملاحظات</th>
-                        <th class="px-6 py-4 font-semibold text-center">إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @forelse($waitlists as $index => $item)
-                        @if(request()->filled('specialist_id') && request('specialist_id') !== 'all' && request('specialist_id') != $item->specialist_id)
-                            @continue
+        <div class="max-w-4xl mx-auto space-y-4">
+            @forelse($waitlists as $index => $item)
+                @if(request()->filled('specialist_id') && request('specialist_id') !== 'all' && request('specialist_id') != $item->specialist_id)
+                    @continue
+                @endif
+                
+                <div class="queue-card bg-white/90 backdrop-blur-md rounded-3xl p-5 border border-white shadow-xl flex flex-col md:flex-row items-center gap-6 transition hover:-translate-y-1">
+                    <!-- Turn Number -->
+                    <div class="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex flex-col items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                        <span class="text-xs font-bold opacity-80 mb-0.5">الدور</span>
+                        <span class="text-3xl font-black">#{{ $index + 1 }}</span>
+                    </div>
+                    
+                    <!-- Details -->
+                    <div class="flex-1 text-center md:text-right">
+                        <h3 class="text-xl font-black text-slate-800">{{ $item->child->name }}</h3>
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
+                            <span class="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-doctor text-slate-400"></i>
+                                الأخصائي: {{ $item->specialist->name }}
+                            </span>
+                            <span class="px-3 py-1 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold flex items-center gap-1.5">
+                                <i class="fa-regular fa-clock text-slate-400"></i>
+                                منذ {{ $item->created_at->diffForHumans() }}
+                            </span>
+                        </div>
+                        @if($item->notes)
+                        <p class="text-xs font-semibold text-slate-500 mt-3 bg-slate-50 p-2 rounded-lg inline-block w-full md:w-auto text-right">
+                            <i class="fa-solid fa-quote-right text-slate-300 ml-1"></i>
+                            {{ $item->notes }}
+                        </p>
                         @endif
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <span class="w-8 h-8 bg-amber-100 text-amber-700 font-black text-xs rounded-lg flex items-center justify-center">
-                                    #{{ $index + 1 }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-800">{{ $item->child->name }}</p>
-                                <p class="text-xs text-slate-500">{{ $item->child->code }}</p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <img src="{{ $item->specialist->photo_path ? asset('storage/' . $item->specialist->photo_path) : 'https://ui-avatars.com/api/?name='.urlencode($item->specialist->name).'&background=e2e8f0&color=64748b' }}" alt="{{ $item->specialist->name }}" class="w-8 h-8 rounded-lg object-cover">
-                                    <div>
-                                        <p class="font-bold text-slate-700 text-xs">{{ $item->specialist->name }}</p>
-                                        <p class="text-[10px] text-slate-500">{{ $item->specialist->specialization }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                @if($item->priority == 'high')
-                                    <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold"><i class="fa-solid fa-angles-up ml-1"></i>قصوى</span>
-                                @elseif($item->priority == 'normal')
-                                    <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold"><i class="fa-solid fa-minus ml-1"></i>عادية</span>
-                                @else
-                                    <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold"><i class="fa-solid fa-angle-down ml-1"></i>منخفضة</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-xs text-slate-500">
-                                <p>{{ $item->created_at->format('Y-m-d') }}</p>
-                                <p class="text-[10px]">منذ {{ $item->created_at->diffForHumans() }}</p>
-                            </td>
-                            <td class="px-6 py-4 text-xs text-slate-600 max-w-xs truncate" title="{{ $item->notes }}">
-                                {{ $item->notes ?? '-' }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <form action="{{ route('waitlists.updateStatus', $item->id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <input type="hidden" name="status" value="scheduled">
-                                        <button type="submit" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center tooltip" title="تم الحجز له">
-                                            <i class="fa-solid fa-calendar-check"></i>
-                                        </button>
-                                    </form>
-                                    <form action="{{ route('waitlists.updateStatus', $item->id) }}" method="POST">
-                                        @csrf @method('PATCH')
-                                        <input type="hidden" name="status" value="cancelled">
-                                        <button type="submit" onclick="return confirm('هل أنت متأكد من الإلغاء؟')" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white transition flex items-center justify-center tooltip" title="إلغاء من القائمة">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-slate-400">
-                                <i class="fa-solid fa-clipboard-list text-4xl mb-3 opacity-30"></i>
-                                <p class="font-bold text-sm">قائمة الانتظار فارغة حالياً.</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+                        <form action="{{ route('waitlists.updateStatus', $item->id) }}" method="POST" class="flex-1 md:flex-none">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="status" value="scheduled">
+                            <button type="submit" class="w-full md:w-auto px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-500/30 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-door-open"></i>
+                                <span>دخل الجلسة</span>
+                            </button>
+                        </form>
+                        
+                        <form action="{{ route('waitlists.updateStatus', $item->id) }}" method="POST" class="flex-1 md:flex-none">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="status" value="cancelled">
+                            <button type="submit" onclick="return confirm('هل أنت متأكد من الإلغاء؟')" class="w-full md:w-auto px-4 py-3 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white font-bold text-sm transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>إلغاء</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="text-center py-20 relative z-10">
+                    <div class="w-24 h-24 bg-white/50 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-white">
+                        <i class="fa-solid fa-mug-hot text-4xl text-slate-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-700">لا يوجد أحد في قائمة الانتظار</h3>
+                    <p class="text-slate-500 mt-2">يمكن للأخصائيين أخذ استراحة الآن!</p>
+                </div>
+            @endforelse
         </div>
     </div>
 
@@ -164,10 +177,10 @@
             
             <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
                         <i class="fa-solid fa-plus"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800">إضافة لقائمة الانتظار</h3>
+                    <h3 class="text-xl font-bold text-slate-800">إضافة لقائمة الدور</h3>
                 </div>
                 <button @click="showAddModal = false" class="text-slate-400 hover:text-slate-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -196,37 +209,12 @@
                             @endforeach
                         </select>
                     </div>
-
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-1.5">الأولوية <span class="text-rose-500">*</span></label>
-                        <div class="grid grid-cols-3 gap-3">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="priority" value="high" class="peer sr-only">
-                                <div class="text-center py-2 px-3 border border-slate-200 rounded-xl peer-checked:bg-rose-50 peer-checked:border-rose-500 peer-checked:text-rose-600 transition-all">
-                                    <i class="fa-solid fa-angles-up mb-1"></i><br>
-                                    <span class="text-xs font-bold">قصوى</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="priority" value="normal" checked class="peer sr-only">
-                                <div class="text-center py-2 px-3 border border-slate-200 rounded-xl peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-600 transition-all">
-                                    <i class="fa-solid fa-minus mb-1"></i><br>
-                                    <span class="text-xs font-bold">عادية</span>
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="priority" value="low" class="peer sr-only">
-                                <div class="text-center py-2 px-3 border border-slate-200 rounded-xl peer-checked:bg-slate-100 peer-checked:border-slate-400 peer-checked:text-slate-600 transition-all">
-                                    <i class="fa-solid fa-angle-down mb-1"></i><br>
-                                    <span class="text-xs font-bold">منخفضة</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
+                    
+                    <input type="hidden" name="priority" value="normal">
 
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-1.5">ملاحظات (اختياري)</label>
-                        <textarea name="notes" rows="2" placeholder="مثال: يفضل المواعيد المسائية..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-primary/20 text-slate-700 transition-all resize-none"></textarea>
+                        <textarea name="notes" rows="2" placeholder="مثال: يرجى الانتباه أن الطفل منزعج قليلاً..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-primary/20 text-slate-700 transition-all resize-none"></textarea>
                     </div>
                 </div>
 
@@ -234,9 +222,9 @@
                     <button type="button" @click="showAddModal = false" class="px-6 py-3 rounded-2xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">
                         إلغاء
                     </button>
-                    <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-2xl font-bold transition-colors shadow-lg shadow-amber-500/20 flex items-center gap-2">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl font-bold transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2">
                         <i class="fa-solid fa-check"></i>
-                        إضافة للقائمة
+                        تأكيد وإضافة
                     </button>
                 </div>
             </form>

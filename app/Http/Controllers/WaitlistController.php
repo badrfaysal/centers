@@ -102,7 +102,16 @@ class WaitlistController extends Controller
 
         $waitlist->update(['status' => $validated['status']]);
 
-        $msg = $validated['status'] == 'scheduled' ? 'تم تحويل الحالة إلى (تم الحجز) بنجاح.' : 'تم إلغاء الحالة من قائمة الانتظار.';
+        if ($validated['status'] == 'scheduled') {
+            \Illuminate\Support\Facades\Cache::put('center_screen_notification', [
+                'timestamp' => time(),
+                'type' => 'call',
+                'child_name' => $waitlist->child->name,
+                'specialist_name' => $waitlist->specialist->name,
+            ], now()->addMinutes(5));
+        }
+
+        $msg = $validated['status'] == 'scheduled' ? 'تم دخول الطفل الجلسة وتم إرسال النداء بنجاح.' : 'تم إلغاء الحالة من قائمة الانتظار.';
         return redirect()->route('waitlists.index')->with('success', $msg);
     }
 }

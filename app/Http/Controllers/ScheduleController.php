@@ -228,7 +228,7 @@ class ScheduleController extends Controller
         $stStr = $st->format('H:i');
         $etStr = $et->format('H:i');
 
-        $conflict = SessionSchedule::where('room_name', $validated['room_name'])
+        $roomConflict = SessionSchedule::where('room_name', $validated['room_name'])
             ->where('session_date', $validated['session_date'])
             ->where('status', '!=', 'cancelled')
             ->where(function($q) use ($stStr, $etStr) {
@@ -237,14 +237,29 @@ class ScheduleController extends Controller
             })
             ->first();
 
-        if ($conflict) {
-            return redirect()->back()->with('error', "الرادار الذكي يمنع التعارض: الغرفة ({$validated['room_name']}) مشغولة في نفس التوقيت بطفل آخر.")->withInput();
+        if ($roomConflict) {
+            return redirect()->back()->with('error', "الغرفة ({$validated['room_name']}) مشغولة في هذا الموعد بطفل آخر، برجاء اختيار غرفة أو قاعة أخرى.")->withInput();
+        }
+
+        // Specialist Conflict Preventer
+        $specialistConflict = SessionSchedule::where('specialist_name', $validated['specialist_name'])
+            ->where('session_date', $validated['session_date'])
+            ->where('status', '!=', 'cancelled')
+            ->where(function($q) use ($stStr, $etStr) {
+                $q->where('start_time', '<', $etStr)
+                  ->where('end_time', '>', $stStr);
+            })
+            ->first();
+
+        if ($specialistConflict) {
+            return redirect()->back()->with('error', "الأخصائي ({$validated['specialist_name']}) لديه جلسة أخرى في نفس التوقيت، برجاء تعديل وقت الجلسة.")->withInput();
         }
 
         $schedule = SessionSchedule::create($validated);
 
         if ($validated['is_recurring']) {
-            for ($i = 1; $i <= 3; $i++) {
+            // تكرار لمدة 4 أسابيع قادمة لتغطية الشهور التي تحتوي على 5 أسابيع
+            for ($i = 1; $i <= 4; $i++) {
                 $nextDate = $dateObj->copy()->addWeeks($i);
                 $recurringData = $validated;
                 $recurringData['session_date'] = $nextDate->toDateString();
@@ -295,7 +310,7 @@ class ScheduleController extends Controller
         $stStr = $st->format('H:i');
         $etStr = $et->format('H:i');
 
-        $conflict = SessionSchedule::where('room_name', $validated['room_name'])
+        $roomConflict = SessionSchedule::where('room_name', $validated['room_name'])
             ->where('session_date', $validated['session_date'])
             ->where('id', '!=', $schedule->id)
             ->where('status', '!=', 'cancelled')
@@ -305,8 +320,23 @@ class ScheduleController extends Controller
             })
             ->first();
 
-        if ($conflict) {
-            return redirect()->back()->with('error', "الرادار الذكي يمنع التعارض: الغرفة ({$validated['room_name']}) مشغولة في نفس التوقيت بطفل آخر.")->withInput();
+        if ($roomConflict) {
+            return redirect()->back()->with('error', "الغرفة ({$validated['room_name']}) مشغولة في هذا الموعد بطفل آخر، برجاء اختيار غرفة أو قاعة أخرى.")->withInput();
+        }
+
+        // Specialist Conflict Preventer
+        $specialistConflict = SessionSchedule::where('specialist_name', $validated['specialist_name'])
+            ->where('session_date', $validated['session_date'])
+            ->where('id', '!=', $schedule->id)
+            ->where('status', '!=', 'cancelled')
+            ->where(function($q) use ($stStr, $etStr) {
+                $q->where('start_time', '<', $etStr)
+                  ->where('end_time', '>', $stStr);
+            })
+            ->first();
+
+        if ($specialistConflict) {
+            return redirect()->back()->with('error', "الأخصائي ({$validated['specialist_name']}) لديه جلسة أخرى في نفس التوقيت، برجاء تعديل وقت الجلسة.")->withInput();
         }
 
         // Reset status if it was cancelled

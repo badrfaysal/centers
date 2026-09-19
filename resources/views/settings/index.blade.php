@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="space-y-8" x-data="{ 
-    tab: 'branding',
+    tab: localStorage.getItem('settingsTab') || 'branding',
     centerName: '{{ $settings['center_name'] }}',
     centerSlogan: '{{ $settings['center_slogan'] }}',
     primaryColor: '{{ $settings['primary_color'] }}',
@@ -14,6 +14,9 @@
     currency: '{{ $settings['currency'] }}',
     defaultMin: '{{ $settings['default_session_min'] }}',
     heroPreview: '{{ $settings['hero_image'] ?? '' }}',
+    init() {
+        this.$watch('tab', val => localStorage.setItem('settingsTab', val));
+    },
     handleHero(event) {
         const file = event.target.files[0];
         if (file) {
@@ -50,7 +53,7 @@
     </div>
 
     <!-- نموذج حفظ الإعدادات الرئيسي -->
-    <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+    <form id="main-settings-form" action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -59,35 +62,48 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- شريط التبويبات -->
-                <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-1 text-sm font-bold">
-                    <button type="button" @click="tab = 'branding'" :class="tab === 'branding' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="tab === 'branding' ? 'border-color: ' + primaryColor + '; color: ' + primaryColor : ''" class="px-3 transition flex items-center gap-2">
-                        <i class="fa-solid fa-paintbrush"></i>
-                        <span>الهوية البصرية والسايد بار</span>
+                <!-- شريط التبويبات -->
+                <div class="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl">
+                    <button type="button" @click="tab = 'branding'" 
+                            :class="tab === 'branding' ? 'bg-white shadow-sm text-slate-900 font-black' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 font-bold'" 
+                            class="px-4 py-2.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-2 flex-1 justify-center sm:flex-none sm:justify-start">
+                        <i class="fa-solid fa-paintbrush" :style="tab === 'branding' ? 'color: ' + primaryColor : ''"></i>
+                        <span>الهوية</span>
                     </button>
 
-                    <button type="button" @click="tab = 'photos'" :class="tab === 'photos' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="tab === 'photos' ? 'border-color: ' + primaryColor + '; color: ' + primaryColor : ''" class="px-3 transition flex items-center gap-2">
-                        <i class="fa-solid fa-camera"></i>
-                        <span>صور ومرافق المركز للموقع</span>
+                    <button type="button" @click="tab = 'photos'" 
+                            :class="tab === 'photos' ? 'bg-white shadow-sm text-slate-900 font-black' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 font-bold'" 
+                            class="px-4 py-2.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-2 flex-1 justify-center sm:flex-none sm:justify-start">
+                        <i class="fa-solid fa-camera" :style="tab === 'photos' ? 'color: ' + primaryColor : ''"></i>
+                        <span>الصور</span>
                     </button>
 
-                    <button type="button" @click="tab = 'general'" :class="tab === 'general' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="tab === 'general' ? 'border-color: ' + primaryColor + '; color: ' + primaryColor : ''" class="px-3 transition flex items-center gap-2">
-                        <i class="fa-solid fa-building-columns"></i>
-                        <span>بيانات التواصل والعنوان</span>
+                    <button type="button" @click="tab = 'general'" 
+                            :class="tab === 'general' ? 'bg-white shadow-sm text-slate-900 font-black' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 font-bold'" 
+                            class="px-4 py-2.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-2 flex-1 justify-center sm:flex-none sm:justify-start">
+                        <i class="fa-solid fa-building-columns" :style="tab === 'general' ? 'color: ' + primaryColor : ''"></i>
+                        <span>بيانات التواصل</span>
                     </button>
 
-                    <button type="button" @click="tab = 'whatsapp'" :class="tab === 'whatsapp' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="tab === 'whatsapp' ? 'border-color: ' + primaryColor + '; color: ' + primaryColor : ''" class="px-3 transition flex items-center gap-2">
-                        <i class="fa-brands fa-whatsapp"></i>
-                        <span>أتمتة رسائل الواتساب</span>
+                    <button type="button" @click="tab = 'whatsapp'" 
+                            :class="tab === 'whatsapp' ? 'bg-white shadow-sm text-slate-900 font-black' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 font-bold'" 
+                            class="px-4 py-2.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-2 flex-1 justify-center sm:flex-none sm:justify-start">
+                        <i class="fa-brands fa-whatsapp" :style="tab === 'whatsapp' ? 'color: ' + primaryColor : ''"></i>
+                        <span>واتساب</span>
                     </button>
 
-                    <button type="button" @click="tab = 'pricing'" :class="tab === 'pricing' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="tab === 'pricing' ? 'border-color: ' + primaryColor + '; color: ' + primaryColor : ''" class="px-3 transition flex items-center gap-2">
-                        <i class="fa-solid fa-money-bill-wave"></i>
-                        <span>تسعير جلسات الأخصائيين</span>
+                    <button type="button" @click="tab = 'pricing'" 
+                            :class="tab === 'pricing' ? 'bg-white shadow-sm text-slate-900 font-black' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 font-bold'" 
+                            class="px-4 py-2.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-2 flex-1 justify-center sm:flex-none sm:justify-start">
+                        <i class="fa-solid fa-money-bill-wave" :style="tab === 'pricing' ? 'color: ' + primaryColor : ''"></i>
+                        <span>تسعير الجلسات</span>
                     </button>
                     
-                    <button type="button" @click="tab = 'dropdowns'" :class="tab === 'dropdowns' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="tab === 'dropdowns' ? 'border-color: ' + primaryColor + '; color: ' + primaryColor : ''" class="px-3 transition flex items-center gap-2">
-                        <i class="fa-solid fa-list-ul"></i>
-                        <span>إعدادات القوائم (Dropdowns)</span>
+                    <button type="button" @click="tab = 'dropdowns'" 
+                            :class="tab === 'dropdowns' ? 'bg-white shadow-sm text-slate-900 font-black' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 font-bold'" 
+                            class="px-4 py-2.5 rounded-xl text-xs transition-all duration-200 flex items-center gap-2 flex-1 justify-center sm:flex-none sm:justify-start">
+                        <i class="fa-solid fa-list-ul" :style="tab === 'dropdowns' ? 'color: ' + primaryColor : ''"></i>
+                        <span>القوائم</span>
                     </button>
                 </div>
 
@@ -466,13 +482,11 @@
                         </div>
                     </form>
 
-                    <form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">{{-- إعادة فتح فورم الإعدادات --}}
-                        @csrf
                 </div>
 
                 <!-- زر الحفظ النهائي -->
                 <div class="pt-4 flex items-center justify-end">
-                    <button type="submit" class="px-8 py-3.5 rounded-2xl text-white font-extrabold text-sm shadow-xl hover:opacity-90 active:scale-95 transition flex items-center gap-2.5" :style="'background-color: ' + primaryColor">
+                    <button type="submit" form="main-settings-form" class="px-8 py-3.5 rounded-2xl text-white font-extrabold text-sm shadow-xl hover:opacity-90 active:scale-95 transition flex items-center gap-2.5" :style="'background-color: ' + primaryColor">
                         <i class="fa-solid fa-floppy-disk text-base"></i>
                         <span>حفظ وتطبيق التعديلات والصور على النظام والموقع العام</span>
                     </button>

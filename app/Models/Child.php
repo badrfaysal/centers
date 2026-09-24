@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\LogsActivity;
 use Carbon\Carbon;
 
 class Child extends Model
 {
-    use HasFactory, \App\Traits\Filterable;
+    use HasFactory, \App\Traits\Filterable, LogsActivity;
 
 
     protected $fillable = [
@@ -32,6 +33,7 @@ class Child extends Model
         'main_specialist',
         'neurologist_name',
         'current_medications',
+        'medications_file',
         'medical_notes',
         'assistive_devices',
         'package_type',
@@ -55,6 +57,11 @@ class Child extends Model
     public function therapySessions(): HasMany
     {
         return $this->hasMany(TherapySession::class)->latest('session_date');
+    }
+
+    public function tests(): HasMany
+    {
+        return $this->hasMany(ChildTest::class)->latest('test_date');
     }
 
     /**
@@ -144,7 +151,7 @@ class Child extends Model
         }
 
         $seed = urlencode($this->name);
-        return "https://api.dicebear.com/7.x/bottts/svg?seed={$seed}";
+        return "https://api.dicebear.com/7.x/initials/svg?seed={$seed}&backgroundColor=0d9488&fontFamily=Cairo&fontSize=40&bold=true";
     }
 
     /**

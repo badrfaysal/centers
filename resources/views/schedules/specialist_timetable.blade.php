@@ -39,11 +39,13 @@
             </div>
             @endif
 
+            @if(auth()->user()->role === 'admin' || auth()->user()->role === 'user')
             <!-- زر إضافة موعد جديد -->
             <button type="button" @click="openAddModal('{{ date('Y-m-d') }}')" class="px-5 py-2.5 rounded-2xl text-white font-extrabold text-xs shadow-md hover:opacity-95 active:scale-95 transition flex items-center gap-2" style="background-color: #0d9488;">
                 <i class="fa-solid fa-plus text-xs"></i>
                 <span>+ حجز موعد جلسة</span>
             </button>
+            @endif
         </div>
     </div>
 
@@ -123,8 +125,14 @@
                 </h3>
             </div>
 
-            <!-- أزرار التبديل بين عرض الكالندر والجدول الزمني -->
+            <!-- أزرار التبديل والفلاتر -->
             <div class="flex items-center gap-2">
+                <!-- شريط البحث -->
+                <div class="relative w-48">
+                    <input type="text" x-model="searchQuery" placeholder="بحث بالطفل أو الأخصائي..." class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/20">
+                    <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+
                 <div class="flex items-center bg-slate-100 rounded-2xl p-1 text-xs font-bold">
                     <button type="button" @click="viewMode = 'calendar'" :class="viewMode === 'calendar' ? 'bg-slate-50 text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5">
                         <i class="fa-solid fa-table-cells"></i>
@@ -162,17 +170,18 @@
                     <div @click="handleDayClick(day)" 
                          :class="{
                             'ring-2 ring-amber-400 bg-amber-50/30 border-amber-300': isToday(day),
-                            'bg-white border-slate-200 hover:border-teal-400': !isToday(day)
+                            'bg-slate-50 border-slate-200 opacity-60 hover:opacity-100': isPast(day) && !isToday(day),
+                            'bg-white border-slate-200 hover:border-teal-400': !isToday(day) && !isPast(day)
                          }" 
                          class="min-h-[110px] sm:min-h-[130px] p-2 rounded-2xl border transition shadow-2xs flex flex-col justify-between group cursor-pointer hover:shadow-md">
                         
                         <!-- رقم اليوم في رأس الخلية -->
                         <div class="flex items-center justify-between">
-                            <span :class="isToday(day) ? 'bg-amber-500 text-white font-black' : 'text-slate-700 font-extrabold'" 
+                            <span :class="isToday(day) ? 'bg-amber-500 text-white font-black' : (isPast(day) ? 'text-slate-400 font-bold' : 'text-slate-700 font-extrabold')" 
                                   class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-mono shadow-2xs" 
                                   x-text="day"></span>
                             
-                            <button type="button" @click.stop="openAddModalForDay(day)" class="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white transition flex items-center justify-center text-[10px]" title="إضافة موعد بهذا اليوم">
+                            <button type="button" x-show="!isPast(day)" @click.stop="openAddModalForDay(day)" class="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white transition flex items-center justify-center text-[10px]" title="إضافة موعد بهذا اليوم">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                         </div>
@@ -295,7 +304,7 @@
                     <div class="space-y-3 pt-2">
                         
                         <div class="space-y-3 pt-2" x-show="selectedSession.attendance_status === 'pending'">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2" x-show="isSessionToday(selectedSession)">
                                 <!-- تسجيل حضور وبدء الجلسة -->
                                 <a :href="'/doctor-portal/log?child_id=' + selectedSession.child_id" class="flex-1 py-3 px-3 rounded-2xl bg-emerald-600 text-white font-bold text-xs shadow-md hover:bg-emerald-700 transition flex items-center justify-center gap-1.5">
                                     <i class="fa-solid fa-notes-medical"></i>
@@ -317,6 +326,21 @@
                                     <i class="fa-brands fa-whatsapp text-lg"></i>
                                 </a>
                             </div>
+
+                            <div class="flex items-center gap-2" x-show="isSessionPast(selectedSession)">
+                                <div class="flex-1 py-3 px-3 rounded-2xl bg-slate-100 border border-slate-200 text-slate-500 font-bold text-xs flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                    <span>انتهى وقت الجلسة دون تسجيل حضور أو إجراء</span>
+                                </div>
+                            </div>
+
+                            <!-- If future -->
+                            <div class="flex items-center gap-2" x-show="isSessionFuture(selectedSession)">
+                                <div class="flex-1 py-3 px-3 rounded-2xl bg-teal-50 border border-teal-200 text-teal-700 font-bold text-xs flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-calendar-day"></i>
+                                    <span>جلسة قادمة (تُسجل في نفس يوم الجلسة)</span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- If attended -->
@@ -325,7 +349,7 @@
                                 <i class="fa-solid fa-check-circle"></i>
                                 <span>تم الحضور والجلسة مسجلة</span>
                             </div>
-                            <a :href="selectedSession.whatsapp_reminder_url" target="_blank" class="p-3 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition" title="إرسال تذكير واتساب">
+                            <a :href="selectedSession.whatsapp_reminder_url" target="_blank" class="p-3 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition" title="إرسال تذكير واتساب" x-show="!isSessionPast(selectedSession)">
                                 <i class="fa-brands fa-whatsapp text-lg"></i>
                             </a>
                         </div>
@@ -336,13 +360,14 @@
                                 <i class="fa-solid fa-times-circle"></i>
                                 <span>تم تسجيل الغياب</span>
                             </div>
-                            <a :href="selectedSession.whatsapp_reminder_url" target="_blank" class="p-3 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition" title="إرسال تذكير واتساب">
+                            <a :href="selectedSession.whatsapp_reminder_url" target="_blank" class="p-3 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition" title="إرسال تذكير واتساب" x-show="!isSessionPast(selectedSession)">
                                 <i class="fa-brands fa-whatsapp text-lg"></i>
                             </a>
                         </div>
 
+                        @if(auth()->user()->role === 'admin' || auth()->user()->role === 'user')
                         <!-- حذف الموعد -->
-                        <div class="text-center pt-2 border-t border-slate-100">
+                        <div class="text-center pt-2 border-t border-slate-100" x-show="!isSessionPast(selectedSession)">
                             <form :action="'/schedules/' + selectedSession.id" method="POST" onsubmit="return confirm('هل أنت متأكد من رغبتك في حذف هذا الموعد من الجدول؟')">
                                 @csrf
                                 @method('DELETE')
@@ -351,6 +376,7 @@
                                 </button>
                             </form>
                         </div>
+                        @endif
 
                     </div>
 
@@ -518,7 +544,7 @@
                     </div>
                     
                     <template x-if="!dayIsAllCancelled">
-                        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex flex-col gap-3">
+                        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex flex-col gap-3" x-show="!isPast(parseInt(sessionDate.split('-')[2]))">
                             <p class="font-bold text-rose-800">حالة طوارئ أو طلب إجازة؟</p>
                             <p class="text-rose-600 text-[11px]">عند الضغط على الزر أدناه سيتم إلغاء جميع جلساتك لهذا اليوم فوراً، وتسجيل غياب تلقائي للأطفال، وإرسال تنبيه عاجل للإدارة لإبلاغ أولياء الأمور.</p>
                             <form action="/doctor-portal/timetable/apologize-day" method="POST" onsubmit="return confirm('هل أنت متأكد من إلغاء جميع مواعيدك لهذا اليوم؟ هذا الإجراء لا يمكن التراجع عنه بسهولة!')">
@@ -548,6 +574,7 @@
 function specialistCalendarApp() {
     return {
         viewMode: 'calendar',
+        searchQuery: '',
         currentYear: new Date().getFullYear(),
         currentMonth: new Date().getMonth(),
         monthNames: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
@@ -628,15 +655,63 @@ function specialistCalendarApp() {
                    today.getDate() === day;
         },
 
+        isPast(day) {
+            let date = new Date(this.currentYear, this.currentMonth, day);
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            return date < today;
+        },
+
+        isSessionPast(sess) {
+            let sessionDate = new Date(sess.session_date);
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            return sessionDate < today;
+        },
+
+        isSessionFuture(sess) {
+            let sessionDate = new Date(sess.session_date);
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            return sessionDate > today;
+        },
+
+        isSessionToday(sess) {
+            let sessionDate = new Date(sess.session_date);
+            let today = new Date();
+            today.setHours(0,0,0,0);
+            return sessionDate.getTime() === today.getTime();
+        },
+
         getSessionsForDay(day) {
             let dateStr = this.formatDate(day);
-            return this.allSessions.filter(s => s.session_date === dateStr);
+            return this.allSessions.filter(s => {
+                let matchDate = s.session_date === dateStr;
+                let matchSearch = true;
+                if (this.searchQuery.trim() !== '') {
+                    let q = this.searchQuery.trim().toLowerCase();
+                    matchSearch = (s.child_name && s.child_name.toLowerCase().includes(q)) || 
+                                  (s.specialist_name && s.specialist_name.toLowerCase().includes(q)) ||
+                                  (s.session_title && s.session_title.toLowerCase().includes(q));
+                }
+                return matchDate && matchSearch;
+            });
         },
 
         get filteredMonthSessions() {
             let mStr = String(this.currentMonth + 1).padStart(2, '0');
             let prefix = `${this.currentYear}-${mStr}`;
-            return this.allSessions.filter(s => s.session_date.startsWith(prefix));
+            return this.allSessions.filter(s => {
+                let matchMonth = s.session_date.startsWith(prefix);
+                let matchSearch = true;
+                if (this.searchQuery.trim() !== '') {
+                    let q = this.searchQuery.trim().toLowerCase();
+                    matchSearch = (s.child_name && s.child_name.toLowerCase().includes(q)) || 
+                                  (s.specialist_name && s.specialist_name.toLowerCase().includes(q)) ||
+                                  (s.session_title && s.session_title.toLowerCase().includes(q));
+                }
+                return matchMonth && matchSearch;
+            });
         },
 
         handleDayClick(day) {
@@ -647,7 +722,11 @@ function specialistCalendarApp() {
                 this.calculateDaySummary();
                 this.daySummaryModalOpen = true;
             } else {
-                this.openAddModalForDay(day);
+                if (!this.isPast(day)) {
+                    @if(auth()->user()->role === 'admin' || auth()->user()->role === 'user')
+                    this.openAddModalForDay(day);
+                    @endif
+                }
             }
         },
 

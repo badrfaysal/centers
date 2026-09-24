@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'تسجيل أخصائي تأهيل جديد')
 
@@ -90,10 +90,6 @@
                 </div>
 
                 <!-- الرقم القومي -->
-                <div class="sm:col-span-1">
-                    <label class="block font-bold text-slate-700 mb-1.5">الرقم القومي <span class="text-rose-500">*</span></label>
-                    <input type="text" name="national_id" value="{{ old('national_id') }}" required maxlength="14" placeholder="14 رقم" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                </div>
 
                 <!-- اسم الأخصائي -->
                 <div class="sm:col-span-1">

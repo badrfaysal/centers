@@ -211,6 +211,33 @@
             background: #94a3b8;
         }
     </style>
+    <!-- TomSelect for Searchable Selects -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    
+    <style>
+        .ts-control {
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            background-color: #f8fafc;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            box-shadow: none !important;
+            transition: all 0.2s;
+        }
+        .ts-control.focus {
+            background-color: #ffffff;
+            border-color: #cbd5e1;
+        }
+        .ts-wrapper.single .ts-control {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: left 1rem center;
+            background-size: 16px 12px;
+        }
+    </style>
+    
     <?php echo $__env->yieldPushContent('styles'); ?>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col" x-data="{ sidebarOpen: false }">
@@ -254,7 +281,7 @@
                             </a>
 
                             <!-- الموقع الإلكتروني العام -->
-                            @if(!Auth::check() || Auth::user()->role !== 'parent')
+                            @if(!Auth::check() || in_array(Auth::user()->role, ['admin', 'user']))
                             <a href="{{ route('website') }}" target="_blank" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10 mb-2">
                                 <i class="fa-solid fa-globe w-5 text-center text-base text-emerald-400"></i>
                                 <span>الموقع الإلكتروني العام</span>
@@ -330,14 +357,14 @@
                             </a>
                             <a href="{{ route('children.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('children.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-child-reaching w-5 text-center text-base {{ request()->routeIs('children.*') ? 'text-white' : 'text-emerald-400' }}"></i>
-                                <span>ملفات الأطفال (IEP)</span>
+                                <span>ملفات الأطفال</span>
                             </a>
                             <!-- مكتبة الملفات والفيديوهات -->
                             <a href="{{ route('media.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('media.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-photo-film w-5 text-center text-base {{ request()->routeIs('media.*') ? 'text-white' : 'text-purple-400' }}"></i>
                                 <span>الملفات والفيديوهات</span>
                             </a>
-                        @else
+                        @elseif(Auth::check() && in_array(Auth::user()->role, ['admin', 'user']))
                             <!-- لوحة التحكم -->
                             <a href="{{ route('dashboard') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('dashboard') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-chart-pie w-5 text-center text-base {{ request()->routeIs('dashboard') ? 'text-white' : '' }}"></i>
@@ -383,7 +410,7 @@
                             <!-- ملفات الأطفال -->
                             <a href="{{ route('children.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('children.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-child-reaching w-5 text-center text-base {{ request()->routeIs('children.*') ? 'text-white' : 'text-emerald-400' }}"></i>
-                                <span>ملفات الأطفال (IEP)</span>
+                                <span>ملفات الأطفال</span>
                             </a>
 
                             <!-- فريق الأخصائيين والتأهيل -->
@@ -429,15 +456,37 @@
                             </a>
 
                             <!-- التقارير -->
+                            @if(in_array(auth()->user()->role, ['admin', 'viewer']))
                             <a href="{{ route('reports.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('reports.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-chart-line w-5 text-center text-base {{ request()->routeIs('reports.*') ? 'text-white' : 'text-indigo-400' }}"></i>
                                 <span>التقارير والإحصائيات</span>
+                            </a>
+                            @endif
+
+                            <!-- إدارة المستخدمين -->
+                            @if(auth()->user()->role === 'admin')
+                            <a href="{{ route('users.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('users.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                                <i class="fa-solid fa-users-gear w-5 text-center text-base {{ request()->routeIs('users.*') ? 'text-white' : 'text-blue-400' }}"></i>
+                                <span>إدارة مستخدمي النظام</span>
+                            </a>
+
+                            <!-- سجل أنشطة النظام -->
+                            <a href="{{ route('logs.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('logs.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                                <i class="fa-solid fa-list-check w-5 text-center text-base {{ request()->routeIs('logs.*') ? 'text-white' : 'text-teal-400' }}"></i>
+                                <span>سجل أنشطة النظام</span>
                             </a>
 
                             <!-- إعدادات وهوية المركز -->
                             <a href="{{ route('settings.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('settings.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-palette w-5 text-center text-base {{ request()->routeIs('settings.*') ? 'text-white' : 'text-pink-400' }}"></i>
                                 <span>إعدادات وهوية المركز</span>
+                            </a>
+                            @endif
+                        @elseif(Auth::check() && Auth::user()->role === 'viewer')
+                            <!-- التقارير للمشاهد فقط -->
+                            <a href="{{ route('reports.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('reports.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                                <i class="fa-solid fa-chart-line w-5 text-center text-base {{ request()->routeIs('reports.*') ? 'text-white' : 'text-indigo-400' }}"></i>
+                                <span>التقارير والإحصائيات</span>
                             </a>
                         @endif
 
@@ -481,7 +530,7 @@
                         <i class="fa-solid fa-bars text-xl"></i>
                     </button>
                     
-                    @if(Auth::check() && Auth::user()->role !== 'parent')
+                    @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'user']))
                     <form action="{{ route('children.index') }}" method="GET" class="relative w-full">
                         <i class="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" 
@@ -494,7 +543,7 @@
 
                 <!-- أزرار الإجراءات السريعة والإشعارات -->
                 <div class="flex items-center gap-3">
-                    @if(Auth::check() && Auth::user()->role !== 'parent')
+                    @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'user']))
                     
                     <!-- زر كالندر اليوم السريع -->
                     <a href="{{ route('calendar.index') }}" class="hidden sm:flex items-center gap-2 px-3.5 py-2 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-2xl text-xs font-bold transition border border-amber-200">

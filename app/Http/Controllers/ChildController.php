@@ -51,7 +51,6 @@ class ChildController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'national_id'         => 'required|string|size:14|unique:children,national_id|unique:users,username',
             'code'                => 'required|string|unique:children,code',
             'name'                => 'required|string|max:100',
             'birth_date'          => 'required|date',
@@ -91,18 +90,9 @@ class ChildController extends Controller
             $validated['photo_path'] = $path;
         }
 
-        $user = \App\Models\User::create([
-            'name' => $validated['parent_name'],
-            'username' => $validated['national_id'],
-            'password' => \Illuminate\Support\Facades\Hash::make($validated['national_id']),
-            'role' => 'parent',
-        ]);
-
-        $validated['user_id'] = $user->id;
-
         $child = Child::create($validated);
 
-        return redirect()->route('children.index')->with('success', "تم تسجيل ملف الطفل ({$child->name}) وتوليد كوده ({$child->code}) بنجاح! ");
+        return redirect()->route('children.index')->with('success', 'تم إضافة الطفل بنجاح. يمكن لولي الأمر الآن إنشاء حسابه من البوابة.');
     }
 
     /**
@@ -252,7 +242,7 @@ class ChildController extends Controller
     public function update(Request $request, Child $child)
     {
         $validated = $request->validate([
-            'national_id'         => ['required', 'string', 'size:14', \Illuminate\Validation\Rule::unique('children')->ignore($child->id)],
+            'phone'               => ['required', 'string', 'max:25'],
             'code'                => ['required', 'string', \Illuminate\Validation\Rule::unique('children')->ignore($child->id)],
             'name'                => 'required|string|max:100',
             'birth_date'          => 'required|date',
@@ -261,7 +251,6 @@ class ChildController extends Controller
             'photo'               => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'parent_name'         => 'required|string|max:100',
             'parent_relation'     => 'required|string|max:50',
-            'phone'               => 'required|string|max:25',
             'emergency_phone'     => 'nullable|string|max:25',
             'address'             => 'nullable|string|max:255',
             'diagnoses'           => 'nullable|array',
@@ -294,32 +283,7 @@ class ChildController extends Controller
 
         $child->update($validated);
 
-        if ($child->user_id) {
-            $user = \App\Models\User::find($child->user_id);
-            if ($user) {
-                $request->validate([
-                    'national_id' => [\Illuminate\Validation\Rule::unique('users', 'username')->ignore($user->id)]
-                ]);
-                $user->update([
-                    'name' => $validated['parent_name'],
-                    'username' => $validated['national_id'],
-                    'password' => \Illuminate\Support\Facades\Hash::make($validated['national_id']),
-                ]);
-            }
-        } else {
-            $request->validate([
-                'national_id' => 'unique:users,username'
-            ]);
-            $user = \App\Models\User::create([
-                'name' => $validated['parent_name'],
-                'username' => $validated['national_id'],
-                'password' => \Illuminate\Support\Facades\Hash::make($validated['national_id']),
-                'role' => 'parent',
-            ]);
-            $child->update(['user_id' => $user->id]);
-        }
-
-        return redirect()->route('children.index')->with('success', "تم تحديث وحفظ بيانات ملف الطفل ({$child->name}) بنجاح! ");
+        return redirect()->route('children.index')->with('success', "تم تحديث وحفظ بيانات ملف الطفل ({$child->name}) بنجاح!");
     }
 
     private function getSpecialistsList(): array
@@ -357,6 +321,50 @@ class ChildController extends Controller
             'pay_per_session' => 'محاسبة بالجلسة المفردة',
         ];
     }
+
+    public function uploadMedications(Request $request, Child $child)
+    {
+        $request->validate([
+            'medications_file' => 'required|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
+        ]);
+
+        if ($request->hasFile('medications_file')) {
+            if ($child->medications_file) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($child->medications_file);
+            }
+            $path = $request->file('medications_file')->store('children/medications', 'public');
+            $child->update(['medications_file' => $path]);
+        }
+
+        return redirect()->back()->with('success', 'تم رفع ملف الأدوية بنجاح.');
+    }
+
+    public function storeTest(Request $request, Child $child)
+    {
+        $validated = $request->validate([
+            'test_name' => 'required|string|max:255',
+            'test_date' => 'required|date',
+            'score'     => 'nullable|string|max:255',
+            'notes'     => 'nullable|string',
+            'file_path' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
+        ]);
+
+        if ($request->hasFile('file_path')) {
+            $validated['file_path'] = $request->file('file_path')->store('children/tests', 'public');
+        }
+
+        $child->tests()->create($validated);
+
+        return redirect()->back()->with('success', 'تم إضافة الاختبار بنجاح.');
+    }
+
+    public function destroyTest(\App\Models\ChildTest $test)
+    {
+        if ($test->file_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($test->file_path);
+        }
+        $test->delete();
+
+        return redirect()->back()->with('success', 'تم حذف الاختبار بنجاح.');
+    }
 }
-
-

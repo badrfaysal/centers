@@ -19,6 +19,7 @@ class Invoice extends Model
         'parent_name',
         'session_price',
         'sessions_count',
+        'consumed_sessions',
         'total_amount',
         'discount_amount',
         'discount_percentage',

@@ -29,7 +29,7 @@
                     <i class="fa-solid fa-child-reaching"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-black text-slate-800">ملفات الأطفال المسجلين (IEP)</h2>
+                    <h2 class="text-2xl font-black text-slate-800">ملفات الأطفال المسجلين</h2>
                     <p class="text-xs text-slate-500 font-semibold mt-0.5">إدارة بيانات الأطفال، التشخيصات المستقلة، دكتور المخ والأعصاب، والأدوية</p>
                 </div>
             </div>

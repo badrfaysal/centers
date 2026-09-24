@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -68,6 +68,11 @@
                         <span>تسجيل الدخول</span>
                         <i class="fa-solid fa-arrow-left-long"></i>
                     </button>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] font-bold px-2 pt-2 border-t border-slate-100">
+                    <a href="{{ route('forgot.password') }}" class="text-rose-600 hover:text-rose-800 transition">نسيت كلمة المرور؟</a>
+                    <a href="{{ route('portal.register') }}" class="text-teal-600 hover:text-teal-800 transition">إنشاء حساب بوابة</a>
                 </div>
             </form>
         </div>

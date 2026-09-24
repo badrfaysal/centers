@@ -76,10 +76,9 @@ class DashboardController extends Controller
 
         // 2. حالة غرف المركز والجلسات الجارية الآن (Live Rooms Dispatcher)
         $rooms = [];
-        $uniqueRooms = $todaySchedules->pluck('room_name')->filter()->unique();
-        if ($uniqueRooms->isEmpty()) {
-            $uniqueRooms = collect(\App\Http\Controllers\SettingController::getDropdownList('rooms'));
-        }
+        $settingsRooms = \App\Http\Controllers\SettingController::getDropdownList('rooms');
+        $scheduleRooms = $todaySchedules->pluck('room_name')->filter()->toArray();
+        $uniqueRooms = collect(array_merge($settingsRooms, $scheduleRooms))->unique();
 
         foreach ($uniqueRooms as $roomName) {
             $currentSession = $todaySchedules->filter(function($s) use ($roomName, $nowTime) {
@@ -125,9 +124,11 @@ class DashboardController extends Controller
                 if ($nextSession) {
                     $nextTime = Carbon::parse($nextSession->start_time)->format('h:i A');
                     $nextSessionTitle = $nextSession->session_title;
+                    $childName = \App\Models\Child::find($nextSession->child_id)->name ?? 'غير محدد';
                 } else {
                     $nextTime = 'لا يوجد موعد قادم اليوم';
                     $nextSessionTitle = '';
+                    $childName = '';
                 }
 
                 $rooms[] = [
@@ -135,8 +136,10 @@ class DashboardController extends Controller
                     'name' => $roomName,
                     'category' => 'قاعة تأهيل',
                     'status' => 'available',
-                    'next_session' => $nextTime . ($nextSessionTitle ? " ({$nextSessionTitle})" : ''),
-                    'specialist' => $nextSession ? $nextSession->specialist_name : 'غير محدد',
+                    'next_session_time' => $nextTime,
+                    'next_session_title' => $nextSessionTitle,
+                    'specialist' => $nextSession ? $nextSession->specialist_name : '',
+                    'child_name' => $childName,
                 ];
             }
         }

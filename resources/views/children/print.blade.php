@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -141,7 +141,7 @@
                  تقرير طبي سريري للمخ والأعصاب
             </button>
             <button type="button" @click="setPreset('iep_only')" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition border border-emerald-100">
-                 خطة الأهداف (IEP) فقط
+                 خطة الأهداف فقط
             </button>
         </div>
 
@@ -172,10 +172,10 @@
                 <span class="truncate">الملف الطبي والأدوية</span>
             </label>
 
-            <!-- 5. الخطة العلاجية IEP -->
+            <!-- 5. الخطة العلاجية -->
             <label class="p-2.5 rounded-2xl border cursor-pointer transition flex items-center gap-2 select-none" :class="sections.iep ? 'bg-teal-50/80 border-teal-300 text-teal-950 ring-1 ring-teal-300' : 'bg-slate-50 border-slate-200 text-slate-400'">
                 <input type="checkbox" x-model="sections.iep" class="rounded text-teal-600 focus:ring-0">
-                <span class="truncate">الخطة العلاجية (IEP)</span>
+                <span class="truncate">الخطة العلاجية</span>
             </label>
 
             <!-- 6. ملخص الجلسات -->
@@ -228,7 +228,7 @@
 
         <!-- شريط عنوان التقرير -->
         <div class="text-center py-2 px-4 rounded-xl bg-slate-900 text-white space-y-0.5">
-            <h2 class="font-black text-sm tracking-wide">تقرير تأهيلي وطبي سريري شامل (Comprehensive IEP Clinical Report)</h2>
+            <h2 class="font-black text-sm tracking-wide">تقرير تأهيلي وطبي سريري شامل (Comprehensive Clinical Report)</h2>
             <p class="text-[10px] text-slate-300 font-medium">الخطة الفردية، التقييم السريري، ونسب التطور وملاحظات الجلسات التأهيلية</p>
         </div>
 
@@ -250,7 +250,7 @@
                 <template x-if="sections.photo">
                     <div class="col-span-1 flex flex-col items-center justify-center p-2 bg-white rounded-xl border border-slate-200">
                         <img src="{{ $child->avatar_url }}" alt="child" class="w-20 h-20 rounded-xl object-cover ring-1 ring-slate-200">
-                        <span class="text-[9px] font-bold text-slate-400 mt-1">حالة الملف: نشط بالخطة</span>
+                        <span class="text-[9px] font-bold text-slate-400 mt-1">{{ $child->status === 'active' ? 'نشط بالخطة' : 'معلق' }}</span>
                     </div>
                 </template>
 
@@ -327,14 +327,52 @@
                     <p class="font-semibold text-slate-800">{{ $child->assistive_devices ?? 'لا توجد أجهزة مساعدة' }} • {{ $child->medical_notes ?? 'تاريخ طبي طبيعي' }}</p>
                 </div>
             </div>
+
+            <!-- سجل الاختبارات والتقييمات المسجلة -->
+            @if($child->tests->count() > 0)
+            <div class="space-y-1.5 pt-1">
+                <span class="text-[10px] font-black text-slate-500 flex items-center gap-1">
+                    <i class="fa-solid fa-clipboard-check text-indigo-600"></i>
+                    سجل الاختبارات والتقييمات النفسية والعقلية المسجلة ({{ $child->tests->count() }} اختبار):
+                </span>
+                <table class="w-full text-right text-[10px] border-collapse">
+                    <thead>
+                        <tr class="bg-indigo-50 text-indigo-800 font-bold border-b border-indigo-200">
+                            <th class="py-1.5 px-2 w-8">#</th>
+                            <th class="py-1.5 px-2">اسم الاختبار / المقياس</th>
+                            <th class="py-1.5 px-2 w-24">تاريخ الاختبار</th>
+                            <th class="py-1.5 px-2 w-24">الدرجة / النتيجة</th>
+                            <th class="py-1.5 px-2">ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-800 font-medium">
+                        @foreach($child->tests as $ti => $test)
+                        <tr>
+                            <td class="py-1.5 px-2 text-slate-400 font-mono">{{ $ti + 1 }}</td>
+                            <td class="py-1.5 px-2 font-bold text-slate-900">{{ $test->test_name }}</td>
+                            <td class="py-1.5 px-2 font-mono">{{ $test->test_date->format('Y/m/d') }}</td>
+                            <td class="py-1.5 px-2">
+                                @if($test->score)
+                                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-bold border border-emerald-200">{{ $test->score }}</span>
+                                @else
+                                    <span class="text-slate-400">—</span>
+                                @endif
+                            </td>
+                            <td class="py-1.5 px-2 text-slate-600">{{ $test->notes ?? '—' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
         </div>
 
-        <!-- ==================== 4. الخطة العلاجية الفردية (IEP Goals) ==================== -->
+        <!-- ==================== 4. الخطة العلاجية الفردية ==================== -->
         <div x-show="sections.iep" class="border border-slate-300 rounded-2xl p-4 bg-white space-y-3 page-break-inside-avoid">
             <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                 <span class="font-black text-xs text-slate-900 flex items-center gap-1.5">
                     <i class="fa-solid fa-bullseye text-teal-700"></i>
-                    <span>ثالثاً: الخطة العلاجية الفردية ونسب إتقان الأهداف (IEP Goals Progress)</span>
+                    <span>ثالثاً: الخطة العلاجية الفردية ونسب إتقان الأهداف</span>
                 </span>
                 <span class="text-[10px] font-bold text-slate-500">معدل الإنجاز العام: 80%</span>
             </div>
@@ -374,29 +412,108 @@
             </table>
         </div>
 
-        <!-- ==================== 5. ملخص الجلسات الأخيرة والتمرين المنزلي ==================== -->
-        <div x-show="sections.sessions" class="border border-slate-300 rounded-2xl p-4 bg-white space-y-3 page-break-inside-avoid">
-            <span class="font-black text-xs text-slate-900 flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                <i class="fa-solid fa-notes-medical text-amber-600"></i>
-                <span>رابعاً: ملخص أحدث الجلسات المنفذة والتوصيات والتمرين المنزلي لولي الأمر</span>
-            </span>
+        <!-- ==================== 5. تقارير الأخصائيين التفصيلية عن الجلسات ==================== -->
+        <div x-show="sections.sessions" class="border border-slate-300 rounded-2xl p-4 bg-white space-y-4 page-break-inside-avoid">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <span class="font-black text-xs text-slate-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-notes-medical text-amber-600"></i>
+                    <span>رابعاً: تقارير الأخصائيين التفصيلية عن الجلسات المنفذة</span>
+                </span>
+                <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                    إجمالي الجلسات الموثقة: {{ count($recentSessions) }}
+                </span>
+            </div>
 
-            <div class="space-y-2">
-                @foreach(array_slice($recentSessions, 0, 2) as $sess)
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-1.5">
-                    <div class="flex items-center justify-between font-bold">
-                        <span class="text-slate-900">جلسة: {{ $sess['date'] }} ({{ $sess['time'] }}) • الأخصائي: {{ $sess['specialist'] }}</span>
-                        <span class="text-emerald-800 font-bold px-2 py-0.5 rounded bg-emerald-100 border border-emerald-200 text-[10px]">استجابة الطفل: {{ $sess['mood'] }}</span>
+            @foreach($recentSessions as $idx => $sess)
+            <div class="rounded-xl border border-slate-200 overflow-hidden page-break-inside-avoid">
+                
+                <!-- رأس الجلسة -->
+                <div class="flex items-center justify-between px-4 py-2.5 text-white text-[11px] font-bold" style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black">{{ $idx + 1 }}</span>
+                        <span>جلسة {{ $sess['date'] }}</span>
+                        <span class="opacity-80">{{ $sess['time'] }} • {{ $sess['room'] }}</span>
                     </div>
-                    <p class="text-slate-700 leading-relaxed"><strong class="text-slate-900">تقرير الجلسة:</strong> {{ $sess['notes'] }}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-lg bg-white/20 text-[10px]">استجابة الطفل: {{ $sess['mood'] }}</span>
+                        <span class="px-2 py-0.5 rounded-lg bg-white/20 text-[10px]">الأخصائي: {{ $sess['specialist'] }}</span>
+                    </div>
+                </div>
+
+                <div class="p-4 space-y-3">
+                    <!-- تقرير الأخصائي المفصّل -->
+                    <div class="space-y-1">
+                        <span class="text-[10px] font-black text-slate-500 flex items-center gap-1">
+                            <i class="fa-solid fa-file-medical text-teal-600"></i>
+                            تقرير وملاحظات الأخصائي المفصّلة عن الجلسة:
+                        </span>
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-800 font-medium leading-relaxed">
+                            {{ $sess['notes'] }}
+                        </div>
+                    </div>
+
+                    <!-- الأهداف التي تم تقييمها -->
+                    @if(!empty($sess['goals']) && is_array($sess['goals']) && count($sess['goals']) > 0)
+                    <div class="space-y-1.5">
+                        <span class="text-[10px] font-black text-slate-500 flex items-center gap-1">
+                            <i class="fa-solid fa-bullseye text-indigo-600"></i>
+                            الأهداف العلاجية التي تم التدريب عليها وتقييمها:
+                        </span>
+                        <table class="w-full text-right text-[10px] border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                                    <th class="py-1.5 px-2 w-8">#</th>
+                                    <th class="py-1.5 px-2">الهدف</th>
+                                    <th class="py-1.5 px-2 text-center w-28">نسبة الإتقان</th>
+                                    <th class="py-1.5 px-2 text-center w-16">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach($sess['goals'] as $gi => $g)
+                                @php
+                                    $gText = is_array($g) ? ($g['text'] ?? 'هدف') : $g;
+                                    $gPct = is_array($g) ? (int)($g['percentage'] ?? 0) : 0;
+                                @endphp
+                                <tr>
+                                    <td class="py-1.5 px-2 text-slate-400 font-mono">{{ $gi + 1 }}</td>
+                                    <td class="py-1.5 px-2 font-bold text-slate-800">{{ $gText }}</td>
+                                    <td class="py-1.5 px-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                <div class="h-full rounded-full {{ $gPct >= 100 ? 'bg-emerald-500' : ($gPct >= 50 ? 'bg-teal-500' : 'bg-amber-500') }}" style="width: {{ $gPct }}%"></div>
+                                            </div>
+                                            <span class="font-mono font-black text-slate-700 w-8 text-center">{{ $gPct }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-1.5 px-2 text-center">
+                                        @if($gPct >= 100)
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">✓ مكتمل</span>
+                                        @else
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700">قيد التدريب</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+
+                    <!-- التمرين المنزلي -->
                     @if(!empty($sess['home_exercise']))
-                    <p class="text-amber-950 bg-amber-50 p-2 rounded-lg border border-amber-200 leading-relaxed font-semibold">
-                        <strong class="text-amber-900">الواجب المنزلي المطلوب من الأهل:</strong> {{ $sess['home_exercise'] }}
-                    </p>
+                    <div class="space-y-1">
+                        <span class="text-[10px] font-black text-amber-700 flex items-center gap-1">
+                            <i class="fa-solid fa-house-user"></i>
+                            التمرين / الواجب المنزلي المطلوب من ولي الأمر:
+                        </span>
+                        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950 font-semibold leading-relaxed">
+                            {{ $sess['home_exercise'] }}
+                        </div>
+                    </div>
                     @endif
                 </div>
-                @endforeach
             </div>
+            @endforeach
         </div>
 
         <!-- ==================== 6. التوقيعات الرسمية والأختام والاعتماد ==================== -->

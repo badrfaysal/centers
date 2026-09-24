@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\Filterable;
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Specialist extends Model
 {
-    use HasFactory, \App\Traits\Filterable;
+    use HasFactory, Filterable, LogsActivity;
 
 
     protected $fillable = [
@@ -51,6 +53,25 @@ class Specialist extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function getExperienceYearsAttribute($value)
+    {
+        if (!$this->created_at) {
+            return $value;
+        }
+        $diff = now()->year - $this->created_at->year;
+        return $value + max(0, $diff);
+    }
+
+    public function setExperienceYearsAttribute($value)
+    {
+        if ($this->exists && $this->created_at) {
+            $diff = now()->year - $this->created_at->year;
+            $this->attributes['experience_years'] = max(0, $value - $diff);
+        } else {
+            $this->attributes['experience_years'] = $value;
+        }
     }
 
     public function getAvatarUrlAttribute(): string

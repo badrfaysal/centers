@@ -100,68 +100,71 @@
             
             <!-- صورة الطفل والاسم والبيانات السريعة -->
             <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-right">
-                <div class="relative group">
-                    <img src="{{ $child->avatar_url }}" alt="{{ $child->name }}" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-slate-100 shadow-md">
-                    <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white {{ $child->status === 'active' ? 'bg-emerald-500' : 'bg-amber-500' }}" title="حالة الطفل: {{ $child->status === 'active' ? 'نشط' : 'معلق' }}"></span>
+                <div class="relative">
+                    <img src="{{ $child->avatar_url }}" alt="{{ $child->name }}" class="w-20 h-20 rounded-2xl object-cover ring-2 ring-slate-200 shadow-sm">
+                    <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white {{ $child->status === 'active' ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
                 </div>
 
                 <div class="space-y-1.5">
                     <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                        <h2 class="text-2xl font-black text-slate-800">{{ $child->name }}</h2>
-                        <span class="font-mono text-xs px-2.5 py-1 rounded-xl font-bold bg-slate-100 text-slate-700" style="color: #0d9488;">{{ $child->code }}</span>
+                        <h2 class="text-xl font-black text-slate-900">{{ $child->name }}</h2>
+                        <span class="font-mono text-[11px] px-2 py-0.5 rounded-lg font-bold bg-slate-100 text-slate-600 border border-slate-200">{{ $child->code }}</span>
                         @if($child->status === 'active')
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> نشط بالخطة
+                            <span class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                نشط بالخطة
+                            </span>
+                        @elseif($child->status === 'on_hold')
+                            <span class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                معلق
                             </span>
                         @else
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800">
-                                معلق
+                            <span class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-slate-50 text-slate-500 border border-slate-200">
+                                خارج الخطة
                             </span>
                         @endif
                     </div>
 
-                    <!-- سطور التشخيصات المستقلة السريعة -->
-                    <div class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-1">
+                    <!-- سطور التشخيصات -->
+                    <div class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-0.5">
                         @foreach($child->diagnoses_list as $diag)
-                        <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full" style="background-color: #0d9488;"></span>
-                            <span>{{ $diag }}</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-800 text-white">
+                            {{ $diag }}
                         </span>
                         @endforeach
                     </div>
 
-                    <p class="text-xs text-slate-400 font-medium">
+                    <p class="text-[11px] text-slate-500 font-medium">
                         ولي الأمر: <strong class="text-slate-700">{{ $child->parent_name }}</strong> ({{ $child->parent_relation }}) • هاتف: <span class="font-mono font-bold text-slate-600">{{ $child->phone }}</span>
                     </p>
                 </div>
             </div>
 
-            <!-- أزرار الإجراءات السريعة (تسجيل جلسة، تعديل، واتساب، طباعة) -->
-            <div class="flex flex-wrap items-center justify-center gap-2.5">
+            <!-- أزرار الإجراءات -->
+            <div class="flex flex-wrap items-center justify-center gap-2">
                 @if(Auth::check() && Auth::user()->role === 'specialist')
-                <a href="{{ route('doctor.sessions.create', ['child_id' => $child->id]) }}" class="px-4 py-2.5 rounded-2xl text-white font-black text-xs shadow-md transition flex items-center gap-1.5 hover:opacity-95" style="background-color: #0d9488;">
+                <a href="{{ route('doctor.sessions.create', ['child_id' => $child->id]) }}" class="px-4 py-2 rounded-xl text-white font-bold text-xs transition flex items-center gap-1.5 hover:opacity-90" style="background-color: #0d9488;">
                     <i class="fa-solid fa-notes-medical"></i>
-                    <span>تسجيل جلسة للطفل</span>
+                    <span>تسجيل جلسة</span>
                 </a>
                 @endif
 
-                <a href="{{ route('children.edit', $child) }}" class="px-4 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
+                <a href="{{ route('children.edit', $child) }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-pen-to-square"></i>
-                    <span>تعديل الملف</span>
+                    <span>تعديل</span>
                 </a>
 
-                <a href="https://wa.me/2{{ $child->phone }}" target="_blank" class="px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
-                    <i class="fa-brands fa-whatsapp text-sm"></i>
-                    <span>مراسلة الواتساب</span>
+                <a href="https://wa.me/2{{ $child->phone }}" target="_blank" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-brands fa-whatsapp text-emerald-600"></i>
+                    <span>واتساب</span>
                 </a>
 
-                <a href="{{ route('children.print', $child) }}" target="_blank" class="px-4 py-2.5 bg-slate-900 text-white hover:bg-slate-800 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shadow-md" title="طباعة تقرير طبي شامل A4">
-                    <i class="fa-solid fa-print text-amber-400"></i>
-                    <span>طباعة التقرير A4</span>
+                <a href="{{ route('children.print', $child) }}" target="_blank" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span>طباعة A4</span>
                 </a>
 
-                <a href="{{ route('children.index') }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-xs font-bold transition">
-                    العودة للقائمة
+                <a href="{{ route('children.index') }}" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl text-xs font-bold transition border border-slate-200">
+                    العودة
                 </a>
             </div>
 
@@ -183,16 +186,26 @@
             $attPct = $totalStats > 0 ? round(($attendedCount / $totalStats) * 100) : 0;
             $absPct = $totalStats > 0 ? round(($absentCount / $totalStats) * 100) : 0;
             $excPct = $totalStats > 0 ? round(($excusedCount / $totalStats) * 100) : 0;
+
+            $registeredSince = $child->created_at ? clone $child->created_at : now();
+            $registeredSinceStr = $registeredSince->diffForHumans(['parts' => 2, 'join' => ' و ', 'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]);
+            $uniqueSpecialists = $child->sessionSchedules()->whereNotNull('specialist_id')->distinct('specialist_id')->count('specialist_id');
         @endphp
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs font-medium">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-xs font-medium">
 
             <!-- 1. مقارنة العمر الزمني والعقلي -->
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                <span class="text-[10px] font-bold text-slate-400 block">العمر (زمني / عقلي):</span>
-                <p class="font-black text-slate-800 text-sm">{{ $child->age_text }}</p>
-                <p class="text-[11px] font-bold text-purple-700">
-                    العقلي: {{ $child->mental_age ?? 'غير محدد' }}
-                </p>
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                <span class="text-[10px] font-bold text-slate-400 block">العمر الزمني / العقلي:</span>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 p-2 rounded-lg bg-white border border-slate-200 text-center">
+                        <span class="text-[9px] text-slate-400 font-bold block">الزمني</span>
+                        <span class="font-black text-slate-900 text-sm block">{{ $child->age_text }}</span>
+                    </div>
+                    <div class="flex-1 p-2 rounded-lg border text-center {{ $child->mental_age ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200' }}">
+                        <span class="text-[9px] font-bold block {{ $child->mental_age ? 'text-amber-600' : 'text-slate-400' }}">العقلي</span>
+                        <span class="font-black text-sm block {{ $child->mental_age ? 'text-amber-800' : 'text-slate-400' }}">{{ $child->mental_age ?? '—' }}</span>
+                    </div>
+                </div>
             </div>
 
             <!-- 2. الأخصائي المتابع -->
@@ -211,7 +224,7 @@
 
             <!-- 4. إحصائيات الحضور -->
             <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1 relative group">
-                <span class="text-xs font-bold text-slate-500 block">إحصائيات الحضور (إجمالي: {{ $totalStats }}):</span>
+                <span class="text-xs font-bold text-slate-500 block">الحضور (إجمالي: {{ $totalStats }}):</span>
                 <div class="flex items-center justify-between font-black text-base px-1 pt-0.5 mt-1">
                     <span class="text-emerald-600 flex flex-col items-center gap-1 leading-none" title="حضر">{{ $attendedCount }}<span class="text-[10px] text-emerald-500 font-bold">حضر ({{ $attPct }}%)</span></span>
                     <span class="text-rose-500 flex flex-col items-center gap-1 leading-none" title="غاب">{{ $absentCount }}<span class="text-[10px] text-rose-400 font-bold">غاب ({{ $absPct }}%)</span></span>
@@ -219,7 +232,7 @@
                 </div>
             </div>
 
-            <!-- 5. رصيد الجلسات بالباقة -->
+            <!-- 5. رصيد الجلسات -->
             <div class="p-3.5 rounded-2xl border space-y-1" style="background-color: #0d948808; border-color: #0d948830;">
                 <span class="text-[10px] font-bold text-slate-400 block">رصيد باقة الجلسات:</span>
                 <p class="font-black text-slate-800 text-sm" style="color: #0d9488;">
@@ -228,40 +241,47 @@
                 <p class="text-[10px] text-emerald-700 font-bold">جلسات منتظمة</p>
             </div>
 
+            <!-- 6. إحصائيات عامة -->
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 block">إحصائيات الطفل:</span>
+                <p class="font-black text-indigo-700 text-xs">مسجل منذ {{ $registeredSinceStr }}</p>
+                <p class="text-[10px] text-indigo-500 font-bold mt-1">تدرب مع {{ $uniqueSpecialists }} أخصائيين</p>
+            </div>
+
         </div>
 
     </div>
 
-    <!-- ==================== 2. شريط التبويبات التفاعلية (Profile Tabs) ==================== -->
-    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-1 text-xs sm:text-sm font-bold">
-        <button type="button" @click="activeTab = 'iep'" :class="activeTab === 'iep' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="activeTab === 'iep' ? 'border-color: #0d9488; color: #0d9488;' : ''" class="px-3.5 transition flex items-center gap-2">
+    <!-- ==================== 2. شريط التبويبات ==================== -->
+    <div class="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+        <button type="button" @click="activeTab = 'iep'" :class="activeTab === 'iep' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg transition flex items-center gap-1.5">
             <i class="fa-solid fa-bullseye"></i>
-            <span>الخطة العلاجية الفردية (IEP)</span>
+            <span>الخطة العلاجية</span>
         </button>
 
-        <button type="button" @click="activeTab = 'medical'" :class="activeTab === 'medical' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="activeTab === 'medical' ? 'border-color: #0d9488; color: #0d9488;' : ''" class="px-3.5 transition flex items-center gap-2">
+        <button type="button" @click="activeTab = 'medical'" :class="activeTab === 'medical' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg transition flex items-center gap-1.5">
             <i class="fa-solid fa-brain"></i>
-            <span>الملف الطبي والسريري</span>
+            <span>الملف الطبي</span>
         </button>
 
-        <button type="button" @click="activeTab = 'sessions'" :class="activeTab === 'sessions' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="activeTab === 'sessions' ? 'border-color: #0d9488; color: #0d9488;' : ''" class="px-3.5 transition flex items-center gap-2">
+        <button type="button" @click="activeTab = 'sessions'" :class="activeTab === 'sessions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg transition flex items-center gap-1.5">
             <i class="fa-solid fa-calendar-check"></i>
-            <span>سجل الجلسات والتقارير</span>
-            <span class="mr-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700 font-black">{{ count($recentSessions) }}</span>
+            <span>تقارير الجلسات</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-600">{{ count($recentSessions) }}</span>
         </button>
 
-        <button type="button" @click="activeTab = 'parent_notes'" :class="activeTab === 'parent_notes' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="activeTab === 'parent_notes' ? 'border-color: #0d9488; color: #0d9488;' : ''" class="px-3.5 transition flex items-center gap-2">
+        <button type="button" @click="activeTab = 'parent_notes'" :class="activeTab === 'parent_notes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg transition flex items-center gap-1.5">
             <i class="fa-solid fa-comments"></i>
-            <span>ملاحظات ولي الأمر والتواصل</span>
+            <span>ملاحظات ولي الأمر</span>
         </button>
     </div>
 
-    <!-- ==================== تبويب 1: الخطة العلاجية الفردية (IEP Goals) ==================== -->
+    <!-- ==================== تبويب 1: الخطة العلاجية الفردية ==================== -->
     <div x-show="activeTab === 'iep'" class="space-y-6">
         
         <div class="flex items-center justify-between">
             <div>
-                <h3 class="font-black text-lg text-slate-800">الأهداف العلاجية المحددة للطفل (IEP Goals)</h3>
+                <h3 class="font-black text-lg text-slate-800">الأهداف العلاجية المحددة للطفل</h3>
                 <p class="text-xs text-slate-400 font-semibold mt-0.5">متابعة نسب التقدم ومراحل الإنجاز لكل هدف تأهيلي</p>
             </div>
 
@@ -358,11 +378,37 @@
                 </p>
             </div>
 
-            <div class="space-y-1 text-xs">
+            <div class="space-y-2 text-xs">
                 <span class="text-slate-400 font-bold">الأدوية والعلاجات الحالية:</span>
                 <p class="p-3 rounded-2xl bg-amber-50 text-amber-900 font-semibold leading-relaxed">
                     {{ $child->current_medications ?? 'لا يتناول أدوية حالياً' }}
                 </p>
+                
+                @if($child->medications_file)
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-amber-50 border border-amber-100">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-file-medical text-amber-600 text-lg"></i>
+                            <span class="font-bold text-amber-900">ملف الأدوية المرفق</span>
+                        </div>
+                        <a href="{{ asset('storage/' . $child->medications_file) }}" target="_blank" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition">
+                            <i class="fa-solid fa-download"></i> عرض
+                        </a>
+                    </div>
+                @endif
+
+                <form action="{{ route('children.upload_medications', $child) }}" method="POST" enctype="multipart/form-data" class="mt-2 flex items-center gap-2">
+                    @csrf
+                    <div class="relative flex-1">
+                        <input type="file" name="medications_file" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="اختر ملف">
+                        <div class="px-4 py-2 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 text-slate-500 font-medium flex items-center justify-center gap-2 pointer-events-none">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>إرفاق صورة أو ملف أدوية</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition shadow-md whitespace-nowrap">
+                        رفع
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -373,11 +419,66 @@
                 <h4 class="font-extrabold text-sm text-slate-800">اختبارات الذكاء والمقاييس السابقة</h4>
             </div>
 
-            <div class="space-y-1 text-xs">
+            <div class="space-y-3 text-xs">
                 <span class="text-slate-400 font-bold">سجل اختبارات ومقاييس الذكاء السابقة:</span>
+                @if($child->iq_tests_history)
                 <p class="p-3.5 rounded-2xl bg-slate-50 text-slate-800 font-medium leading-relaxed">
-                    {{ $child->iq_tests_history ?? 'لم تسجل اختبارات ذكاء سابقة بعد' }}
+                    {{ $child->iq_tests_history }}
                 </p>
+                @endif
+
+                @foreach($child->tests as $test)
+                    <div class="p-3 rounded-2xl border border-slate-100 bg-white flex flex-col gap-2 relative group">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-800">{{ $test->test_name }}</span>
+                            <span class="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{{ $test->test_date->format('Y-m-d') }}</span>
+                        </div>
+                        @if($test->score)
+                            <div class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg w-fit">
+                                الدرجة / النتيجة: {{ $test->score }}
+                            </div>
+                        @endif
+                        @if($test->notes)
+                            <p class="text-slate-600 font-medium">{{ $test->notes }}</p>
+                        @endif
+                        <div class="flex items-center gap-2 mt-1">
+                            @if($test->file_path)
+                                <a href="{{ asset('storage/' . $test->file_path) }}" target="_blank" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-[10px] font-bold flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-file-pdf"></i> عرض الملف
+                                </a>
+                            @endif
+                            <form action="{{ route('children.tests.destroy', $test) }}" method="POST" class="inline" onsubmit="return confirm('تأكيد الحذف؟')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-[10px] font-bold transition">
+                                    <i class="fa-solid fa-trash"></i> حذف
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+
+                <!-- Add New Test Form -->
+                <form action="{{ route('children.tests.store', $child) }}" method="POST" enctype="multipart/form-data" class="mt-4 p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+                    @csrf
+                    <p class="font-bold text-slate-700 mb-2">إضافة تقييم / اختبار جديد</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" name="test_name" placeholder="اسم الاختبار (مثل: ستانفورد بينيه)" required class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium text-xs">
+                        <input type="date" name="test_date" required value="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium text-xs">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" name="score" placeholder="الدرجة أو النتيجة (اختياري)" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium text-xs">
+                        <div class="relative w-full">
+                            <input type="file" name="file_path" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="إرفاق ملف">
+                            <div class="w-full px-3 py-2 border-2 border-dashed border-slate-200 rounded-xl bg-white text-slate-500 font-medium flex items-center justify-center gap-2 pointer-events-none text-[10px]">
+                                <i class="fa-solid fa-paperclip"></i> إرفاق ملف الاختبار
+                            </div>
+                        </div>
+                    </div>
+                    <input type="text" name="notes" placeholder="ملاحظات إضافية عن الاختبار (اختياري)" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium text-xs">
+                    <button type="submit" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition">
+                        حفظ الاختبار
+                    </button>
+                </form>
             </div>
 
             <div class="space-y-1 text-xs">
@@ -455,6 +556,36 @@
                         <p class="text-amber-950 font-semibold leading-relaxed">{{ $sess['home_exercise'] ?? 'متابعة التوجيهات العامة' }}</p>
                     </div>
                 </div>
+
+                <!-- الأهداف التي تم تقييمها في هذه الجلسة -->
+                @if(!empty($sess['goals']) && is_array($sess['goals']))
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bullseye text-teal-600"></i>
+                        الأهداف التي تم التدريب عليها وتقييمها ({{ count($sess['goals']) }} أهداف):
+                    </span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        @foreach($sess['goals'] as $g)
+                        @php
+                            $goalText = is_array($g) ? ($g['text'] ?? 'هدف') : $g;
+                            $goalPct = is_array($g) ? (int)($g['percentage'] ?? 0) : 0;
+                            $pctColor = $goalPct >= 100 ? 'emerald' : ($goalPct >= 50 ? 'blue' : ($goalPct >= 25 ? 'amber' : 'rose'));
+                        @endphp
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                            <p class="text-xs font-bold text-slate-800">{{ $goalText }}</p>
+                            @if(is_array($g) && isset($g['percentage']))
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-{{ $pctColor }}-500 rounded-full transition-all duration-500" style="width: {{ $goalPct }}%"></div>
+                                </div>
+                                <span class="text-[10px] font-black text-{{ $pctColor }}-600 whitespace-nowrap">{{ $goalPct }}%</span>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
 
                 <div class="pt-1 flex items-center justify-between text-[11px] text-slate-400 font-medium">
                     <span>الأخصائي المنفذ: <strong class="text-slate-700">{{ $sess['specialist'] }}</strong></span>

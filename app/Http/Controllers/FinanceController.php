@@ -146,6 +146,12 @@ class FinanceController extends Controller
         return view('finances.invoice', compact('invoice', 'settings'));
     }
 
+    public function print(Invoice $invoice)
+    {
+        $settings = \App\Http\Controllers\SettingController::getSettings();
+        return view('finances.print', compact('invoice', 'settings'));
+    }
+
     /**
      * API: إرجاع سعر جلسة أخصائي محدد.
      */

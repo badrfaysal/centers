@@ -50,12 +50,11 @@ class SpecialistController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'national_id'      => 'required|string|size:14|unique:specialists,national_id|unique:users,username',
+            'phone'            => 'required|string|max:25|unique:specialists,phone',
             'code'             => 'required|string|unique:specialists,code',
             'name'             => 'required|string|max:100',
             'specialization'   => 'required|string|max:100',
             'job_title'        => 'required|string|max:100',
-            'phone'            => 'required|string|max:25',
             'email'            => 'nullable|email|max:100',
             'license_number'   => 'nullable|string|max:100',
             'qualification'    => 'nullable|string|max:255',
@@ -74,20 +73,10 @@ class SpecialistController extends Controller
             $validated['photo_path'] = $path;
         }
 
-        // Create User account
-        $user = \App\Models\User::create([
-            'name' => $validated['name'],
-            'username' => $validated['national_id'],
-            'password' => \Illuminate\Support\Facades\Hash::make($validated['national_id']),
-            'role' => 'specialist',
-        ]);
-
-        $validated['user_id'] = $user->id;
-
         $specialist = Specialist::create($validated);
 
         return redirect()->route('specialists.index')
-            ->with('success', "تم تسجيل وإضافة الأخصائي ({$specialist->name}) بكود ({$specialist->code}) بنجاح! وتم إنشاء حسابه بالرقم القومي.");
+            ->with('success', "تم تسجيل وإضافة الأخصائي ({$specialist->name}) بكود ({$specialist->code}) بنجاح! يمكنه الآن التوجه לבوابة الأخصائيين لإنشاء حساب.");
     }
 
     /**
@@ -119,12 +108,11 @@ class SpecialistController extends Controller
     public function update(Request $request, Specialist $specialist)
     {
         $validated = $request->validate([
-            'national_id'      => ['required', 'string', 'size:14', \Illuminate\Validation\Rule::unique('specialists')->ignore($specialist->id)],
-            'code'             => ['required', 'string', Rule::unique('specialists')->ignore($specialist->id)],
+            'phone'            => ['required', 'string', 'max:25', \Illuminate\Validation\Rule::unique('specialists')->ignore($specialist->id)],
+            'code'             => ['required', 'string', \Illuminate\Validation\Rule::unique('specialists')->ignore($specialist->id)],
             'name'             => 'required|string|max:100',
             'specialization'   => 'required|string|max:100',
             'job_title'        => 'required|string|max:100',
-            'phone'            => 'required|string|max:25',
             'email'            => 'nullable|email|max:100',
             'license_number'   => 'nullable|string|max:100',
             'qualification'    => 'nullable|string|max:255',
@@ -145,35 +133,8 @@ class SpecialistController extends Controller
 
         $specialist->update($validated);
 
-        if ($specialist->user_id) {
-            $user = \App\Models\User::find($specialist->user_id);
-            if ($user) {
-                // Ignore unique check for current user username
-                $request->validate([
-                    'national_id' => [\Illuminate\Validation\Rule::unique('users', 'username')->ignore($user->id)]
-                ]);
-                $user->update([
-                    'name' => $validated['name'],
-                    'username' => $validated['national_id'],
-                    'password' => \Illuminate\Support\Facades\Hash::make($validated['national_id']),
-                ]);
-            }
-        } else {
-             // Validate unique username before creating
-             $request->validate([
-                'national_id' => 'unique:users,username'
-            ]);
-            $user = \App\Models\User::create([
-                'name' => $validated['name'],
-                'username' => $validated['national_id'],
-                'password' => \Illuminate\Support\Facades\Hash::make($validated['national_id']),
-                'role' => 'specialist',
-            ]);
-            $specialist->update(['user_id' => $user->id]);
-        }
-
         return redirect()->route('specialists.index')
-            ->with('success', "تم تحديث بيانات الأخصائي ({$specialist->name}) بنجاح!");
+            ->with('success', "تم تحديث بيانات الأخصائي ({$specialist->name}) بنجاح.");
     }
 
     /**

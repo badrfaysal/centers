@@ -17,6 +17,16 @@
         </div>
     </div>
 
+    <!-- Tabs -->
+    <div class="flex items-center gap-3">
+        <a href="{{ route('finances.index') }}" class="px-6 py-2.5 rounded-xl font-bold transition-all bg-brand-primary text-white shadow-md shadow-brand-primary/20 flex items-center gap-2">
+            <i class="fa-solid fa-file-invoice"></i> الفواتير
+        </a>
+        <a href="{{ route('debts.index') }}" class="px-6 py-2.5 rounded-xl font-bold transition-all bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand-primary flex items-center gap-2">
+            <i class="fa-solid fa-hand-holding-dollar"></i> الديون
+        </a>
+    </div>
+
     @if(session('success'))
         <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-6 py-4 rounded-3xl flex items-center gap-3">
             <i class="fa-solid fa-circle-check text-xl"></i>
@@ -134,7 +144,10 @@
                     @forelse($invoices as $invoice)
                     <tr class="hover:bg-slate-50/50 transition-colors group">
                         <td class="px-6 py-4">
-                            <span class="font-bold text-slate-700">#{{ $invoice->invoice_number ?? $invoice->id }}</span>
+                            <a href="{{ route('finances.show', $invoice->id) }}" class="font-black text-brand-primary hover:underline flex items-center gap-2">
+                                <i class="fa-solid fa-file-invoice text-slate-400"></i>
+                                #{{ $invoice->invoice_number ?? $invoice->id }}
+                            </a>
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">

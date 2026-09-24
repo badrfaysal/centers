@@ -6,14 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use App\Traits\LogsActivity;
 
 class SessionSchedule extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'child_id',
         'specialist_id',
+        'invoice_id',
         'specialist_name',
         'session_title',
         'session_date',
@@ -40,6 +42,11 @@ class SessionSchedule extends Model
     public function specialist(): BelongsTo
     {
         return $this->belongsTo(Specialist::class);
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     public function getFormattedTimeRangeAttribute(): string

@@ -462,11 +462,11 @@
         </div>
     </div>
 
-    <!-- ==================== تبويب 2: الأهداف وخطة طفلي (IEP Goals) ==================== -->
+    <!-- ==================== تبويب 2: الأهداف وخطة طفلي ==================== -->
     <div x-show="activeTab === 'goals'" class="space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h3 class="font-black text-lg text-slate-800">الأهداف العلاجية المحددة لطفلك (IEP Goals)</h3>
+                <h3 class="font-black text-lg text-slate-800">الأهداف العلاجية المحددة لطفلك</h3>
                 <p class="text-xs text-slate-400 font-semibold mt-0.5">تابع نسب إتقان طفلك للمهارات اللغوية والسلوكية والحركية</p>
             </div>
             @if($child)

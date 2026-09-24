@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'تسجيل طفل جديد')
 
@@ -166,10 +166,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-5 text-xs font-medium">
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1.5">الرقم القومي (لولي الأمر) <span class="text-rose-500">*</span></label>
-                        <input type="text" name="national_id" required value="{{ old('national_id') }}" maxlength="14" placeholder="14 رقم" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                    </div>
 
                     <div>
                         <label class="block font-bold text-slate-700 mb-1.5">اسم ولي الأمر <span class="text-rose-500">*</span></label>

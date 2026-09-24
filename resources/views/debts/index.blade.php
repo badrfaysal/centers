@@ -31,6 +31,16 @@
         </div>
     </div>
 
+    <!-- Tabs -->
+    <div class="flex items-center gap-3">
+        <a href="{{ route('finances.index') }}" class="px-6 py-2.5 rounded-xl font-bold transition-all bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-brand-primary flex items-center gap-2">
+            <i class="fa-solid fa-file-invoice"></i> الفواتير
+        </a>
+        <a href="{{ route('debts.index') }}" class="px-6 py-2.5 rounded-xl font-bold transition-all bg-brand-primary text-white shadow-md shadow-brand-primary/20 flex items-center gap-2">
+            <i class="fa-solid fa-hand-holding-dollar"></i> الديون
+        </a>
+    </div>
+
     <!-- Success Message -->
     @if(session('success'))
         <div class="bg-emerald-50 border-r-4 border-emerald-500 p-4 rounded-2xl flex items-center gap-3">

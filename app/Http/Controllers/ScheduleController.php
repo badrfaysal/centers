@@ -50,6 +50,7 @@ class ScheduleController extends Controller
             return [
                 'id' => $s->id,
                 'child_id' => $s->child_id,
+                'specialist_id' => $s->specialist_id,
                 'child_name' => $s->child ? $s->child->name : 'طفل',
                 'specialist_name' => $s->specialist_name,
                 'session_title' => $s->session_title,
@@ -112,6 +113,7 @@ class ScheduleController extends Controller
             return [
                 'id' => $s->id,
                 'child_id' => $s->child_id,
+                'specialist_id' => $s->specialist_id,
                 'child_name' => $s->child ? $s->child->name : 'طفل',
                 'specialist_name' => $s->specialist_name,
                 'session_title' => $s->session_title,
@@ -151,8 +153,8 @@ class ScheduleController extends Controller
     {
         $validated = $request->validate([
             'specialist_name' => 'required|string',
-            'session_date' => 'required|date',
-            'notes' => 'nullable|string'
+            'session_date'    => 'required|date',
+            'notes'           => 'nullable|string'
         ]);
 
         $sessions = SessionSchedule::with('child')
@@ -165,27 +167,26 @@ class ScheduleController extends Controller
             return back()->with('error', 'لا توجد جلسات مجدولة (غير مكتملة) في هذا اليوم للاعتذار عنها.');
         }
 
-        // Cancel all scheduled sessions
-        foreach ($sessions as $session) {
-            $session->update([
-                'status' => 'cancelled',
-                'attendance_status' => 'absent',
-                'notes' => 'تم الاعتذار عن اليوم بالكامل من قبل الأخصائي. ' . ($validated['notes'] ?? '')
+        // We DO NOT cancel the sessions! We keep them scheduled, but we notify the admin and parents.
+        $childrenIds = $sessions->pluck('child_id')->unique();
+        
+        $specialist = \App\Models\Specialist::where('name', $validated['specialist_name'])->first();
+        
+        foreach ($childrenIds as $childId) {
+            $child = \App\Models\Child::find($childId);
+            if (!$child) continue;
+
+            \App\Models\ParentMessage::create([
+                'child_id'       => $childId,
+                'parent_name'    => $child->parent_name ?: 'ولي الأمر',
+                'recipient_type' => 'center',
+                'subject'        => 'اعتذار طارئ للأخصائي - سيتم توفير بديل',
+                'message'        => "نعتذر لكم، لقد اعتذر الأخصائي ({$validated['specialist_name']}) عن عمل يوم {$validated['session_date']} لظروف طارئة. يرجى العلم أنه جاري توفير أخصائي بديل لتغطية الجلسة في نفس الموعد.",
+                'is_urgent'      => true,
             ]);
         }
 
-        // Create an urgent parent message to notify the center
-        $specialist = Specialist::where('name', $validated['specialist_name'])->first();
-        \App\Models\ParentMessage::create([
-            'child_id' => $sessions->first()->child_id, // We just need a valid child_id for the schema, but recipient is center
-            'parent_name' => 'الأخصائي: ' . $validated['specialist_name'],
-            'recipient_type' => 'center',
-            'subject' => 'اعتذار طارئ عن يوم عمل: ' . $validated['session_date'],
-            'message' => "يعتذر الأخصائي ({$validated['specialist_name']}) عن حضور دوامه في يوم {$validated['session_date']}. تم إلغاء جميع الجلسات المتبقية في هذا اليوم.",
-            'is_urgent' => true,
-        ]);
-
-        return back()->with('success', 'تم الاعتذار عن الجلسات المتبقية في هذا اليوم وإرسال إشعار عاجل للإدارة.');
+        return back()->with('success', 'تم إرسال إشعار اعتذارك للإدارة ولأولياء الأمور بنجاح. سيتم توفير أخصائي بديل لتغطية الجلسات.');
     }
 
     /**
@@ -193,6 +194,9 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->filled('session_date') && Carbon::parse($request->session_date)->isPast() && !Carbon::parse($request->session_date)->isToday()) {
+            return redirect()->back()->with('error', 'لا يمكن جدولة موعد في تاريخ مضى.');
+        }
         $validated = $request->validate([
             'child_id'        => 'required|exists:children,id',
             'specialist_name' => 'required|string|max:100',
@@ -202,6 +206,7 @@ class ScheduleController extends Controller
             'end_time'        => 'nullable',
             'room_name'       => 'required|string|max:100',
             'is_recurring'    => 'nullable|boolean',
+            'recurring_weeks' => 'nullable|integer|min:1|max:52',
             'notes'           => 'nullable|string|max:1000',
         ]);
 
@@ -258,8 +263,8 @@ class ScheduleController extends Controller
         $schedule = SessionSchedule::create($validated);
 
         if ($validated['is_recurring']) {
-            // تكرار لمدة 4 أسابيع قادمة لتغطية الشهور التي تحتوي على 5 أسابيع
-            for ($i = 1; $i <= 4; $i++) {
+            $weeks = $request->input('recurring_weeks', 4);
+            for ($i = 1; $i <= $weeks; $i++) {
                 $nextDate = $dateObj->copy()->addWeeks($i);
                 $recurringData = $validated;
                 $recurringData['session_date'] = $nextDate->toDateString();
@@ -278,6 +283,9 @@ class ScheduleController extends Controller
      */
     public function update(Request $request, SessionSchedule $schedule)
     {
+        if (Carbon::parse($schedule->session_date)->isPast() && !Carbon::parse($schedule->session_date)->isToday()) {
+            return redirect()->back()->with('error', 'لا يمكن تعديل جلسة مضى تاريخها.');
+        }
         $validated = $request->validate([
             'child_id' => 'required|exists:children,id',
             'specialist_name' => 'required|string',
@@ -353,6 +361,9 @@ class ScheduleController extends Controller
      */
     public function updateAttendance(Request $request, SessionSchedule $schedule)
     {
+        if (Carbon::parse($schedule->session_date)->isPast() && !Carbon::parse($schedule->session_date)->isToday()) {
+            return redirect()->back()->with('error', 'لا يمكن تعديل حضور جلسة مضى تاريخها.');
+        }
         $validated = $request->validate([
             'attendance_status' => 'required|in:pending,attended,absent',
         ]);
@@ -362,6 +373,22 @@ class ScheduleController extends Controller
             'status'            => $validated['attendance_status'] === 'attended' ? 'completed' : $schedule->status,
         ]);
 
+        if ($validated['attendance_status'] === 'attended') {
+            $waitlist = \App\Models\Waitlist::where('child_id', $schedule->child_id)
+                ->where('specialist_id', $schedule->specialist_id)
+                ->whereDate('created_at', today())
+                ->first();
+            if ($waitlist) {
+                $waitlist->update(['status' => 'scheduled']);
+                \Illuminate\Support\Facades\Cache::put('center_screen_notification', [
+                    'timestamp' => time(),
+                    'type' => 'call',
+                    'child_name' => $waitlist->child->name ?? '',
+                    'specialist_name' => $waitlist->specialist->name ?? '',
+                ], now()->addMinutes(5));
+            }
+        }
+
         return redirect()->back()->with('success', 'تم تحديث حالة حضور الجلسة بنجاح.');
     }
 
@@ -370,8 +397,173 @@ class ScheduleController extends Controller
      */
     public function destroy(SessionSchedule $schedule)
     {
+        if (Carbon::parse($schedule->session_date)->isPast() && !Carbon::parse($schedule->session_date)->isToday()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف جلسة مضى تاريخها.');
+        }
         $schedule->delete();
         return redirect()->back()->with('success', 'تم حذف الموعد من الجدول بنجاح.');
+    }
+
+    public function storeAttendanceAndPayment(Request $request, SessionSchedule $schedule)
+    {
+        if (Carbon::parse($schedule->session_date)->isPast() && !Carbon::parse($schedule->session_date)->isToday()) {
+            return redirect()->back()->with('error', 'لا يمكن تعديل حضور جلسة مضى تاريخها.');
+        }
+
+        $validated = $request->validate([
+            'session_price'   => 'required|numeric|min:0',
+            'sessions_count'  => 'required|integer|min:1',
+            'paid_amount'     => 'required|numeric|min:0',
+            'payment_method'  => 'required|in:cash,transfer,visa',
+            'invoice_id'      => 'nullable|exists:invoices,id' // If they are paying from an existing invoice
+        ]);
+
+        // If an invoice_id is passed, it means we are using a prepaid invoice
+        if ($request->filled('invoice_id')) {
+            $invoice = \App\Models\Invoice::findOrFail($request->invoice_id);
+            if ($invoice->consumed_sessions < $invoice->sessions_count) {
+                $invoice->increment('consumed_sessions');
+                
+                $schedule->update([
+                    'attendance_status' => 'attended',
+                    'status'            => 'completed',
+                    'invoice_id'        => $invoice->id
+                ]);
+
+                $waitlist = \App\Models\Waitlist::where('child_id', $schedule->child_id)
+                    ->where('specialist_id', $schedule->specialist_id)
+                    ->whereDate('created_at', today())
+                    ->first();
+                if ($waitlist) {
+                    $waitlist->update(['status' => 'scheduled']);
+                    \Illuminate\Support\Facades\Cache::put('center_screen_notification', [
+                        'timestamp' => time(),
+                        'type' => 'call',
+                        'child_name' => $waitlist->child->name ?? '',
+                        'specialist_name' => $waitlist->specialist->name ?? '',
+                    ], now()->addMinutes(5));
+                }
+
+                return redirect()->back()->with('success', 'تم تسجيل الحضور وخصم الجلسة من الرصيد المدفوع مسبقاً.');
+            } else {
+                return redirect()->back()->with('error', 'عذراً، رصيد الجلسات المدفوعة مسبقاً لهذه الفاتورة قد نفد.');
+            }
+        }
+
+        // Create new invoice
+        $totalAmount = $validated['session_price'] * $validated['sessions_count'];
+        $remainingAmount = $totalAmount - $validated['paid_amount'];
+        $paymentStatus = 'unpaid';
+        if ($validated['paid_amount'] > 0) {
+            $paymentStatus = $remainingAmount <= 0 ? 'paid' : 'partial';
+        }
+
+        $child = $schedule->child;
+        $specialist = $schedule->specialist;
+
+        $invoice = \App\Models\Invoice::create([
+            'invoice_number'      => \App\Models\Invoice::generateNextInvoiceNumber(),
+            'child_id'            => $schedule->child_id,
+            'specialist_id'       => $schedule->specialist_id,
+            'child_name'          => $child->name,
+            'specialist_name'     => $specialist ? $specialist->name : $schedule->specialist_name,
+            'parent_name'         => $child->parent_name,
+            'session_price'       => $validated['session_price'],
+            'sessions_count'      => $validated['sessions_count'],
+            'consumed_sessions'   => 1, // Current session
+            'total_amount'        => $totalAmount,
+            'discount_amount'     => 0,
+            'discount_percentage' => 0,
+            'net_amount'          => $totalAmount,
+            'paid_amount'         => $validated['paid_amount'],
+            'remaining_amount'    => $remainingAmount,
+            'payment_method'      => $validated['payment_method'],
+            'payment_status'      => $paymentStatus,
+            'invoice_date'        => now()->toDateString(),
+        ]);
+
+        $schedule->update([
+            'attendance_status' => 'attended',
+            'status'            => 'completed',
+            'invoice_id'        => $invoice->id
+        ]);
+
+        $waitlist = \App\Models\Waitlist::where('child_id', $schedule->child_id)
+            ->where('specialist_id', $schedule->specialist_id)
+            ->whereDate('created_at', today())
+            ->first();
+        if ($waitlist) {
+            $waitlist->update(['status' => 'scheduled']);
+            \Illuminate\Support\Facades\Cache::put('center_screen_notification', [
+                'timestamp' => time(),
+                'type' => 'call',
+                'child_name' => $waitlist->child->name ?? '',
+                'specialist_name' => $waitlist->specialist->name ?? '',
+            ], now()->addMinutes(5));
+        }
+
+        return redirect()->back()->with('success', 'تم تسجيل الحضور وإصدار الفاتورة بنجاح.')->with('print_invoice_id', $invoice->id);
+    }
+
+    public function transferSessions(Request $request)
+    {
+        $validated = $request->validate([
+            'from_specialist_id' => 'required|exists:specialists,id',
+            'to_specialist_id'   => 'required|exists:specialists,id|different:from_specialist_id',
+            'transfer_date'      => 'required|date',
+        ]);
+
+        $fromSpecialist = \App\Models\Specialist::findOrFail($validated['from_specialist_id']);
+        $toSpecialist = \App\Models\Specialist::findOrFail($validated['to_specialist_id']);
+
+        $sessions = SessionSchedule::where('specialist_id', $fromSpecialist->id)
+            ->whereDate('session_date', $validated['transfer_date'])
+            ->where('status', 'scheduled')
+            ->get();
+
+        $count = 0;
+        foreach ($sessions as $session) {
+            $session->update([
+                'specialist_id' => $toSpecialist->id,
+                'specialist_name' => $toSpecialist->name,
+            ]);
+            $count++;
+        }
+
+        return redirect()->back()->with('success', "تم نقل {$count} جلسات بنجاح من {$fromSpecialist->name} إلى {$toSpecialist->name}.");
+    }
+
+    public function checkPrepaid(Request $request)
+    {
+        $childId = $request->child_id;
+        $specialistId = $request->specialist_id;
+
+        if (!$childId || !$specialistId) {
+            return response()->json(['has_prepaid' => false]);
+        }
+
+        $invoiceQuery = \App\Models\Invoice::where('child_id', $childId)
+            ->whereRaw('consumed_sessions < sessions_count');
+
+        if (is_numeric($specialistId)) {
+            $invoiceQuery->where('specialist_id', $specialistId);
+        } else {
+            // specialistId was passed as a string name
+            $invoiceQuery->where('specialist_name', $specialistId);
+        }
+
+        $invoice = $invoiceQuery->latest('id')->first();
+
+        if ($invoice) {
+            return response()->json([
+                'has_prepaid'       => true,
+                'invoice_id'        => $invoice->id,
+                'invoice_date'      => \Carbon\Carbon::parse($invoice->invoice_date)->format('Y-m-d'),
+                'remaining_sessions'=> $invoice->sessions_count - $invoice->consumed_sessions,
+            ]);
+        }
+
+        return response()->json(['has_prepaid' => false]);
     }
 
     private function getRoomsList(): array

@@ -250,7 +250,7 @@
 
                     <!-- الوصف المختصر -->
                     <p class="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-2xl">
-                        نقدم برامج علاجية وتأهيلية فردية متطورة (IEP) تحت إشراف نخبة من استشاريي التخاطب والتكامل الحسي وتعديل السلوك، مع متابعة حية بالفيديو وتطبيق مخصص لولي الأمر.
+                        نقدم برامج علاجية وتأهيلية فردية متطورة تحت إشراف نخبة من استشاريي التخاطب والتكامل الحسي وتعديل السلوك، مع متابعة حية بالفيديو وتطبيق مخصص لولي الأمر.
                     </p>
 
                     <!-- أزرار الحجز والدخول -->
@@ -275,7 +275,7 @@
 
                         <div class="p-3.5 rounded-2xl bg-white border border-slate-100 shadow-xs">
                             <h4 class="text-2xl font-black text-purple-700">100%</h4>
-                            <p class="text-[11px] font-bold text-slate-500 mt-0.5">خطط فردية مخصصة (IEP)</p>
+                            <p class="text-[11px] font-bold text-slate-500 mt-0.5">خطط فردية مخصصة</p>
                         </div>
 
                         <div class="p-3.5 rounded-2xl bg-white border border-slate-100 shadow-xs">

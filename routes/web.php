@@ -21,15 +21,21 @@ use App\Http\Controllers\ExpenseController;
 Route::get('/site', [WebsiteController::class, 'index'])->name('website');
 Route::post('/site/book', [WebsiteController::class, 'bookConsultation'])->name('website.book');
 
-// 2. // Auth Routes
+// 2. Auth Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+
+    Route::get('/register/portal', [\App\Http\Controllers\Auth\PortalRegisterController::class, 'showRegistrationForm'])->name('portal.register');
+    Route::post('/register/portal', [\App\Http\Controllers\Auth\PortalRegisterController::class, 'register'])->name('portal.register.post');
+
+    Route::get('/forgot-password', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'showForgotForm'])->name('forgot.password');
+    Route::post('/forgot-password', [\App\Http\Controllers\Auth\ForgotPasswordController::class, 'resetPassword'])->name('forgot.password.post');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'role'])->group(function () {
     // 2. لوحة التحكم الرئيسية لإدارة المركز
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -64,7 +70,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/doctor-portal/timetable', [ScheduleController::class, 'specialistTimetable'])->name('doctor.timetable');
     Route::post('/doctor-portal/timetable/apologize-day', [ScheduleController::class, 'apologizeDay'])->name('doctor.timetable.apologize');
     Route::post('/schedules', [ScheduleController::class, 'store'])->name('schedules.store');
+    Route::post('/schedule/{schedule}/attend-pay', [\App\Http\Controllers\ScheduleController::class, 'storeAttendanceAndPayment'])->name('schedule.attend_pay');
+    Route::get('/api/check-prepaid', [\App\Http\Controllers\ScheduleController::class, 'checkPrepaid'])->name('api.check_prepaid');
     Route::put('/schedules/{schedule}', [ScheduleController::class, 'update'])->name('schedules.update');
+    Route::post('/schedules/transfer', [ScheduleController::class, 'transferSessions'])->name('schedules.transfer');
     Route::post('/schedules/{schedule}/attendance', [ScheduleController::class, 'updateAttendance'])->name('schedules.attendance');
     Route::delete('/schedules/{schedule}', [ScheduleController::class, 'destroy'])->name('schedules.destroy');
 
@@ -82,6 +91,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/children/{child}/edit', [ChildController::class, 'edit'])->name('children.edit');
     Route::get('/children/{child}/print', [ChildController::class, 'print'])->name('children.print');
     Route::put('/children/{child}', [ChildController::class, 'update'])->name('children.update');
+    Route::post('/children/{child}/upload-medications', [ChildController::class, 'uploadMedications'])->name('children.upload_medications');
+    Route::post('/children/{child}/tests', [ChildController::class, 'storeTest'])->name('children.tests.store');
+    Route::delete('/children/tests/{test}', [ChildController::class, 'destroyTest'])->name('children.tests.destroy');
 
     // 6. إدارة وتسجيل الأخصائيين وفريق العمل (Specialists Management)
     Route::resource('specialists', SpecialistController::class);
@@ -118,11 +130,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/finances/create', [FinanceController::class, 'create'])->name('finances.create');
     Route::post('/finances', [FinanceController::class, 'store'])->name('finances.store');
     Route::get('/finances/{invoice}', [FinanceController::class, 'show'])->name('finances.show');
+    Route::get('/finances/{invoice}/print', [\App\Http\Controllers\FinanceController::class, 'print'])->name('invoices.print');
     Route::get('/api/specialist-price/{specialist}', [FinanceController::class, 'getSpecialistPrice'])->name('api.specialist.price');
     Route::get('/api/urgent-notifications', [\App\Http\Controllers\DashboardController::class, 'getUrgentNotifications'])->name('api.urgent-notifications');
     Route::get('/api/new-bookings', [\App\Http\Controllers\BookingController::class, 'checkNewBookings'])->name('api.new-bookings');
 
-    // 12. إدارة ديون أولياء الأمور
+    // 12. Users Management (Admins only)
+    Route::resource('users', \App\Http\Controllers\UserController::class)->except(['create', 'show', 'edit']);
+
+    // 13. إدارة ديون أولياء الأمور
     Route::get('/debts', [DebtController::class, 'index'])->name('debts.index');
     Route::post('/debts/{invoice}/pay', [DebtController::class, 'payDebt'])->name('debts.pay');
 
@@ -146,6 +162,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/waitlists', [\App\Http\Controllers\WaitlistController::class, 'index'])->name('waitlists.index');
     Route::post('/waitlists', [\App\Http\Controllers\WaitlistController::class, 'store'])->name('waitlists.store');
     Route::patch('/waitlists/{waitlist}/status', [\App\Http\Controllers\WaitlistController::class, 'updateStatus'])->name('waitlists.updateStatus');
+
+    // Audit Logs
+    Route::get('/logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('logs.index');
 
     // مكتبة الملفات والفيديوهات
     Route::get('/media', [\App\Http\Controllers\MediaController::class, 'index'])->name('media.index');

@@ -22,7 +22,9 @@
     goals: [],
     newGoalText: '',
     clinicalNotes: `{!! old('clinical_notes', '') !!}`,
+    homeExercise: `{!! old('home_exercise', '') !!}`,
     isRecording: false,
+    recordingTarget: 'clinicalNotes',
     interimText: '',
     isHearingAudio: false,
     recognition: null,
@@ -30,10 +32,11 @@
     videoFiles: [],
     isSubmitting: false,
     
-    toggleRecording() {
+    toggleRecording(target = 'clinicalNotes') {
         if (this.isRecording) {
             this.stopRecording();
         } else {
+            this.recordingTarget = target;
             this.startRecording();
         }
     },
@@ -80,10 +83,10 @@
             this.interimText = interimTranscript;
             
             if (finalTranscript) {
-                if (this.clinicalNotes && !this.clinicalNotes.endsWith(' ') && !this.clinicalNotes.endsWith('\n')) {
-                    this.clinicalNotes += ' ';
+                if (this[this.recordingTarget] && !this[this.recordingTarget].endsWith(' ') && !this[this.recordingTarget].endsWith('\n')) {
+                    this[this.recordingTarget] += ' ';
                 }
-                this.clinicalNotes += finalTranscript;
+                this[this.recordingTarget] += finalTranscript;
             }
         };
         
@@ -506,21 +509,21 @@
                     <label class="block font-bold text-slate-700 text-xs">
                         ملاحظات وتقرير الأخصائي المفصل عن الجلسة <span class="text-rose-500">*</span>
                     </label>
-                    <button type="button" @click="toggleRecording()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition shadow-xs" :class="isRecording ? 'bg-rose-100 text-rose-600 animate-pulse border border-rose-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'">
+                    <button type="button" @click="toggleRecording('clinicalNotes')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition shadow-xs" :class="isRecording && recordingTarget === 'clinicalNotes' ? 'bg-rose-100 text-rose-600 animate-pulse border border-rose-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'">
                         <i class="fa-solid fa-microphone"></i>
-                        <span x-text="isRecording ? 'جاري الاستماع... اضغط للإيقاف' : 'إملاء صوتي'"></span>
+                        <span x-text="isRecording && recordingTarget === 'clinicalNotes' ? 'جاري الاستماع... اضغط للإيقاف' : 'إملاء صوتي'"></span>
                     </button>
                 </div>
                 <div class="relative">
-                    <textarea name="clinical_notes" x-model="clinicalNotes" required rows="4" placeholder="اكتب أو املِ ما تم إنجازه مع الطفل بالتفصيل، الاستجابات، الصعوبات، والملاحظات السلوكية أثناء التدريب..." class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-medium text-xs leading-relaxed" :class="isRecording ? 'border-rose-300 ring-2 ring-rose-100 bg-white' : ''"></textarea>
+                    <textarea name="clinical_notes" x-model="clinicalNotes" required rows="4" placeholder="اكتب أو املأ ما تم إنجازه مع الطفل بالتفصيل، الاستجابات، الصعوبات، والملاحظات السلوكية أثناء التدريب..." class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-medium text-xs leading-relaxed" :class="isRecording && recordingTarget === 'clinicalNotes' ? 'border-rose-300 ring-2 ring-rose-100 bg-white' : ''"></textarea>
                     
-                    <div x-show="interimText" class="absolute bottom-10 left-3 right-3 p-2 bg-slate-800/80 text-white rounded-xl text-xs backdrop-blur-sm shadow-sm" x-transition>
+                    <div x-show="interimText && recordingTarget === 'clinicalNotes'" class="absolute bottom-10 left-3 right-3 p-2 bg-slate-800/80 text-white rounded-xl text-xs backdrop-blur-sm shadow-sm" x-transition>
                         <span class="opacity-75">جاري الاستماع: </span>
                         <span x-text="interimText" class="font-bold"></span>
                     </div>
 
                     <!-- Recording Indicator -->
-                    <div x-show="isRecording" class="absolute bottom-3 left-3 flex items-center gap-1.5 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
+                    <div x-show="isRecording && recordingTarget === 'clinicalNotes'" class="absolute bottom-3 left-3 flex items-center gap-1.5 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
                         <span class="relative flex h-2 w-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
@@ -533,11 +536,33 @@
             <!-- التمرين المنزلي للأهل -->
             <div class="space-y-4 p-4 rounded-3xl border border-amber-200 bg-amber-50/50">
                 <div class="space-y-2">
-                    <label class="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
-                        <i class="fa-solid fa-house-user text-amber-600"></i>
-                        <span>التمرين / الواجب المنزلي المطلوب من ولي الأمر (يظهر في تقرير الأهل):</span>
-                    </label>
-                    <textarea name="home_exercise" rows="2" placeholder="مثال: تكرار لعبة الكروت بالمرآة مع الطفل 10 دقائق يومياً قبل النوم، وتشجيعه عند نطق صوت الكاف..." class="w-full p-3.5 bg-white border border-amber-200/80 rounded-2xl outline-none focus:border-amber-400 font-medium text-xs text-amber-950 leading-relaxed"></textarea>
+                    <div class="flex items-center justify-between">
+                        <label class="block font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                            <i class="fa-solid fa-house-user text-amber-600"></i>
+                            <span>التمرين / الواجب المنزلي المطلوب من ولي الأمر (يظهر في تقرير الأهل):</span>
+                        </label>
+                        <button type="button" @click="toggleRecording('homeExercise')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition shadow-xs" :class="isRecording && recordingTarget === 'homeExercise' ? 'bg-rose-100 text-rose-600 animate-pulse border border-rose-200' : 'bg-white text-amber-700 hover:bg-amber-100 border border-amber-200'">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span x-text="isRecording && recordingTarget === 'homeExercise' ? 'جاري الاستماع... اضغط للإيقاف' : 'إملاء صوتي'"></span>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <textarea name="home_exercise" x-model="homeExercise" rows="2" placeholder="مثال: تكرار لعبة الكروت بالمرآة مع الطفل 10 دقائق يومياً قبل النوم، وتشجيعه عند نطق صوت الكاف..." class="w-full p-3.5 bg-white border border-amber-200/80 rounded-2xl outline-none focus:border-amber-400 font-medium text-xs text-amber-950 leading-relaxed" :class="isRecording && recordingTarget === 'homeExercise' ? 'border-rose-300 ring-2 ring-rose-100' : ''"></textarea>
+                        
+                        <div x-show="interimText && recordingTarget === 'homeExercise'" class="absolute bottom-10 left-3 right-3 p-2 bg-slate-800/80 text-white rounded-xl text-xs backdrop-blur-sm shadow-sm" x-transition>
+                            <span class="opacity-75">جاري الاستماع: </span>
+                            <span x-text="interimText" class="font-bold"></span>
+                        </div>
+
+                        <!-- Recording Indicator -->
+                        <div x-show="isRecording && recordingTarget === 'homeExercise'" class="absolute bottom-3 left-3 flex items-center gap-1.5 bg-rose-50 px-2 py-1 rounded-lg border border-rose-100">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                            </span>
+                            <span class="text-[9px] font-bold text-rose-600">يتحدث الآن...</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="space-y-2">

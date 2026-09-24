@@ -535,7 +535,7 @@
                         <!-- رابط ملفات الأطفال -->
                         <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-slate-400 hover:text-white transition">
                             <i class="fa-solid fa-child-reaching w-4 text-center text-emerald-400"></i>
-                            <span>ملفات الأطفال (IEP)</span>
+                            <span>ملفات الأطفال</span>
                             <span class="mr-auto px-2 py-0.5 text-[9px] rounded-full font-bold text-emerald-300 bg-emerald-500/20">142</span>
                         </div>
                     </div>

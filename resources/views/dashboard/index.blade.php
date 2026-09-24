@@ -126,7 +126,13 @@
                 </span>
                 <h3 class="font-extrabold text-lg text-slate-800">حالة غرف التأهيل والجلسات الجارية الآن (Live Rooms)</h3>
             </div>
-            <span class="text-xs text-slate-400 font-bold hidden sm:inline">تحديث فوري للغرف والأخصائيين</span>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-slate-400 font-bold hidden sm:inline">تحديث فوري للغرف والأخصائيين</span>
+                <a href="{{ route('settings.index') }}" onclick="localStorage.setItem('settingsTab', 'dropdowns')" class="px-3 py-1.5 bg-brand-50 text-brand-700 rounded-xl text-xs font-bold hover:bg-brand-100 transition shadow-xs flex items-center gap-1.5 border border-brand-200">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    إضافة قاعة جديدة
+                </a>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -170,11 +176,24 @@
                 </div>
                 @else
                 <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-2">
-                    <div class="flex items-center gap-1.5 text-emerald-700 font-bold">
+                    <div class="flex items-center gap-1.5 text-emerald-700 font-bold mb-1">
                         <i class="fa-regular fa-calendar-plus"></i>
                         <span>الموعد القادم:</span>
                     </div>
-                    <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">{{ $room['next_session'] }}</p>
+                    @if($room['next_session_time'] !== 'لا يوجد موعد قادم اليوم')
+                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
+                            <div class="flex items-center justify-between font-bold">
+                                <span class="text-slate-800">{{ $room['next_session_time'] }}</span>
+                                <span class="text-[10px] text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded">{{ $room['next_session_title'] }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[10px] text-slate-500 font-semibold border-t border-slate-200/60 pt-1.5 mt-1.5">
+                                <span class="flex items-center gap-1"><i class="fa-solid fa-user-doctor text-slate-400"></i> {{ $room['specialist'] }}</span>
+                                <span class="flex items-center gap-1 truncate max-w-[80px]" title="{{ $room['child_name'] }}"><i class="fa-solid fa-child text-slate-400"></i> {{ $room['child_name'] }}</span>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100 text-center font-semibold">لا يوجد موعد قادم اليوم</p>
+                    @endif
                 </div>
                 @endif
 

@@ -1,9 +1,64 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'بروفايل الأخصائي: ' . $specialist->name)
 
 @section('content')
+<style>
+    @media print {
+        @page { margin: 15mm; }
+        body { 
+            background-color: #fff !important; 
+            color: #000 !important;
+        }
+        .sidebar, .navbar, .no-print, header, footer, a, button { 
+            display: none !important; 
+        }
+        
+        /* Remove ALL background colors, borders, and shadows */
+        * {
+            background: transparent !important;
+            color: #000 !important;
+            box-shadow: none !important;
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important;
+        }
+
+        /* Adjust images */
+        img { border: none !important; border-radius: 0 !important; }
+        
+        /* Re-style structural boxes */
+        .bg-white, .bg-slate-50, .bg-slate-100 { 
+            border: none !important; 
+            border-bottom: 1px dashed #ccc !important;
+            border-radius: 0 !important; 
+            margin-bottom: 10px !important;
+            break-inside: avoid; 
+            padding: 5px 0 !important;
+        }
+        
+        main { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+        
+        /* Ensure tabs are all visible as sections */
+        [x-show] { display: block !important; }
+        
+        /* Remove pill shapes */
+        .rounded-full, .rounded-3xl, .rounded-2xl, .rounded-xl, .rounded-lg, .rounded-md {
+            border-radius: 0 !important;
+        }
+        
+        /* Hide icons and specific elements */
+        i.fa-solid, i.fa-brands { display: none !important; }
+        .absolute.w-5.h-5 { display: none !important; }
+    }
+</style>
 <div class="space-y-8" x-data="{ activeTab: 'children' }">
+
+    <!-- ==================== رأس الطباعة الرسمي (يظهر فقط في الطباعة) ==================== -->
+    <div class="hidden print:flex flex-col items-center justify-center mb-8 border-b-2 border-black pb-4 text-center w-full">
+        <h1 class="text-2xl font-bold mb-1">مركز التأهيل الشامل</h1>
+        <h2 class="text-xl font-bold mt-2">تقرير الملف التعريفي للأخصائي</h2>
+        <p class="text-sm mt-2 text-black font-mono">تاريخ الطباعة: {{ date('Y-m-d') }}</p>
+    </div>
 
     <!-- ==================== 1. بطاقة الهوية وبروفايل الأخصائي ==================== -->
     <div class="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm space-y-6">
@@ -42,11 +97,11 @@
             </div>
 
             <!-- أزرار الإجراءات السريعة -->
-            <div class="flex flex-wrap items-center justify-center gap-2.5">
-                <a href="{{ route('doctor.sessions.create') }}" class="px-4 py-2.5 rounded-2xl text-white font-black text-xs shadow-md transition flex items-center gap-1.5 hover:opacity-95" style="background-color: #0d9488;">
-                    <i class="fa-solid fa-notes-medical"></i>
-                    <span>تسجيل جلسة باسمه</span>
-                </a>
+            <div class="flex flex-wrap items-center justify-center gap-2.5 no-print">
+                <button type="button" onclick="window.print()" class="px-4 py-2.5 rounded-2xl text-white font-black text-xs shadow-md transition flex items-center gap-1.5 hover:opacity-95 bg-slate-800">
+                    <i class="fa-solid fa-print"></i>
+                    <span>طباعة البروفايل</span>
+                </button>
 
                 <a href="{{ route('specialists.edit', $specialist) }}" class="px-4 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
                     <i class="fa-solid fa-pen-to-square"></i>
@@ -88,7 +143,7 @@
             <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100 space-y-1">
                 <span class="text-[10px] font-bold text-amber-800 block">نظام المحاسبة:</span>
                 <p class="font-black text-amber-900 text-xs">
-                    {{ $specialist->salary_type === 'per_session' ? 'بالجلسة: ' . $specialist->session_rate . ' ج.م' : ($specialist->salary_type === 'percentage' ? 'نسبة ' . $specialist->session_rate . '%' : 'راتب ثابت') }}
+                    {{ $specialist->salary_type === 'per_session' ? 'بالجلسة: ' . $specialist->session_rate . ' ج.م' : 'راتب ثابت' }}
                 </p>
                 <p class="text-[10px] text-amber-700 font-bold">نظام مالي معتمد</p>
             </div>
@@ -97,7 +152,7 @@
     </div>
 
     <!-- ==================== 2. شريط التبويبات التفاعلية ==================== -->
-    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-1 text-xs sm:text-sm font-bold">
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-1 text-xs sm:text-sm font-bold no-print">
         
         <button type="button" @click="activeTab = 'children'" :class="activeTab === 'children' ? 'border-b-2 font-black pb-3 text-slate-900' : 'text-slate-400 hover:text-slate-600 pb-3'" :style="activeTab === 'children' ? 'border-color: #0d9488; color: #0d9488;' : ''" class="px-3.5 transition flex items-center gap-2">
             <i class="fa-solid fa-child-reaching"></i>
@@ -118,6 +173,7 @@
 
     <!-- ==================== تبويب 1: الأطفال المسندين للمتابعة ==================== -->
     <div x-show="activeTab === 'children'" class="space-y-4">
+        <h3 class="hidden print:block text-lg font-bold border-b-2 border-slate-800 pb-2 mb-4 mt-6">الأطفال المسندين للمتابعة ({{ $assignedChildren->count() }})</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @forelse($assignedChildren as $ch)
             <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center justify-between gap-3 hover:border-slate-300 transition">
@@ -151,6 +207,7 @@
 
     <!-- ==================== تبويب 2: سجل الجلسات المنفذة ==================== -->
     <div x-show="activeTab === 'sessions'" class="space-y-4">
+        <h3 class="hidden print:block text-lg font-bold border-b-2 border-slate-800 pb-2 mb-4 mt-8">سجل الجلسات الموثقة والمنفذة</h3>
         <div class="space-y-3">
             @forelse($recentSessions as $sess)
             <div class="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
@@ -176,7 +233,9 @@
     </div>
 
     <!-- ==================== تبويب 3: المؤهلات وجدول العمل ==================== -->
-    <div x-show="activeTab === 'profile'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div x-show="activeTab === 'profile'" class="grid grid-cols-1 md:grid-cols-2 gap-6 print:!grid print:!grid-cols-2 print:!gap-6 print-show">
+        
+        <h3 class="hidden print:block text-lg font-bold border-b-2 border-slate-800 pb-2 mb-4 mt-8 col-span-1 md:col-span-2 print:col-span-2 w-full">المؤهلات وجدول العمل</h3>
         
         <!-- بطاقة المؤهلات والترخيص -->
         <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4 text-xs font-medium">
@@ -220,6 +279,8 @@
     </div>
 
 </div>
+
+
 @endsection
 
 

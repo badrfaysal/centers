@@ -248,6 +248,9 @@ class DashboardController extends Controller
             ->take(5);
             
         if ($user && $user->role === 'specialist') {
+            $query->where('subject', 'not like', '%اعتذار طارئ عن يوم عمل%')
+                  ->where('subject', 'not like', '%اعتذار طارئ للأخصائي%');
+                  
             $specialist = \App\Models\Specialist::where('user_id', $user->id)->first();
             if ($specialist) {
                 // The parent_messages table does not have specialist_id column in migration
@@ -282,6 +285,17 @@ class DashboardController extends Controller
                 }
             }
 
+            $sessionId = null;
+            if (strpos($msg->subject, 'اعتذار طارئ للأخصائي عن الجلسة') !== false) {
+                $latestCancelledSession = \App\Models\SessionSchedule::where('child_id', $msg->child_id)
+                    ->where('status', 'cancelled')
+                    ->orderBy('updated_at', 'desc')
+                    ->first();
+                if ($latestCancelledSession) {
+                    $sessionId = $latestCancelledSession->id;
+                }
+            }
+
             return [
                 'id' => $msg->id,
                 'title' => $msg->subject,
@@ -289,7 +303,8 @@ class DashboardController extends Controller
                 'time' => $msg->created_at->diffForHumans(),
                 'sender' => $msg->parent_name,
                 'child_name' => $msg->child ? $msg->child->name : '',
-                'affected_html' => $affectedChildrenHtml
+                'affected_html' => $affectedChildrenHtml,
+                'session_id' => $sessionId
             ];
         });
 

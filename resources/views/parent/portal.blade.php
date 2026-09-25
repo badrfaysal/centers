@@ -554,6 +554,37 @@
         <!-- سجل الرسائل السابقة -->
         <div class="space-y-4">
             @foreach($messages as $msg)
+            @php
+                $isSpecialistApology = str_contains($msg->subject, 'اعتذار طارئ للأخصائي');
+                $isDayApology = str_contains($msg->subject, 'اعتذار طارئ عن يوم عمل');
+                $isReplacement = str_contains($msg->subject, 'تحديث عاجل: استبدال أخصائي');
+                $isApology = $isSpecialistApology || $isDayApology || $isReplacement;
+            @endphp
+            
+            @if($isApology)
+            <div class="bg-rose-50 rounded-3xl p-6 border border-rose-200 shadow-sm space-y-3 relative overflow-hidden">
+                <div class="absolute -left-4 -top-4 text-rose-100 opacity-30 pointer-events-none">
+                    <i class="fa-solid fa-triangle-exclamation text-7xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between text-xs pb-2 border-b border-rose-200">
+                        <span class="font-black text-rose-800 flex items-center gap-2">
+                            <i class="fa-solid fa-bell text-rose-600 animate-pulse"></i>
+                            إشعار عاجل من الإدارة ({{ $msg->subject }})
+                        </span>
+                        <span class="text-rose-500 font-mono font-bold">{{ $msg->created_at ? $msg->created_at->format('Y-m-d') : '' }}</span>
+                    </div>
+                    <p class="text-sm font-bold text-rose-900 mt-2 leading-relaxed">{{ $msg->message }}</p>
+
+                    @if($msg->doctor_reply)
+                    <div class="mt-3 p-3.5 rounded-2xl bg-white border border-rose-100 text-rose-950 text-xs space-y-1 shadow-sm">
+                        <span class="font-bold text-teal-700 flex items-center gap-1.5"><i class="fa-solid fa-check-circle"></i> تحديث من الإدارة:</span>
+                        <p class="text-slate-800 font-bold text-sm">{{ $msg->doctor_reply }}</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @else
             <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-3">
                 <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
                     <span class="font-black text-slate-800">{{ $msg->subject ?? 'رسالة لولي الأمر' }}</span>
@@ -570,6 +601,7 @@
                 <p class="text-[11px] text-amber-600 font-bold">بانتظار رد الأخصائي...</p>
                 @endif
             </div>
+            @endif
             @endforeach
         </div>
     </div>

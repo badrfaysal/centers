@@ -525,11 +525,11 @@
             <div class="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg" style="background-color: #0d9488;">
-                        <i class="fa-solid fa-calendar-plus"></i>
+                        <i class="fa-solid" :class="isReplaceSpecialistMode ? 'fa-user-doctor' : 'fa-calendar-plus'"></i>
                     </div>
                     <div>
-                        <h3 class="font-black text-lg text-slate-900" x-text="isEditMode ? 'تعديل موعد الجلسة' : 'حجز موعد جلسة جديدة'"></h3>
-                        <p class="text-xs text-slate-500 font-semibold mt-0.5">تحديد الطفل، الأخصائي، التاريخ، والوقت والقاعة</p>
+                        <h3 class="font-black text-lg text-slate-900" x-text="isReplaceSpecialistMode ? 'استبدال الأخصائي المعالج' : (isEditMode ? 'تعديل موعد الجلسة' : 'حجز موعد جلسة جديدة')"></h3>
+                        <p class="text-xs text-slate-500 font-semibold mt-0.5" x-text="isReplaceSpecialistMode ? 'تغيير الأخصائي المعتذر بأخصائي آخر مع الاحتفاظ بنفس الموعد.' : 'تحديد الطفل، الأخصائي، التاريخ، والوقت والقاعة'"></p>
                     </div>
                 </div>
 
@@ -542,9 +542,9 @@
                 @csrf
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="sm:col-span-2">
+                    <div class="sm:col-span-2" x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">اختر الطفل <span class="text-rose-500">*</span></label>
-                        <select name="child_id" x-model="childId" x-init="new TomSelect($el, {create: false, onChange: (val) => childId = val})" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="child_id" x-model="childId" x-init="let ts = new TomSelect($el, {create: false, onChange: (val) => childId = val}); $watch('childId', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر الطفل من القائمة --</option>
                             @foreach($children as $ch)
                             <option value="{{ $ch->id }}">{{ $ch->name }} (كود: {{ $ch->code }})</option>
@@ -554,7 +554,7 @@
 
                     <div class="sm:col-span-2">
                         <label class="block font-bold text-slate-700 mb-1.5">الأخصائي المعالج <span class="text-rose-500">*</span></label>
-                        <select name="specialist_name" x-model="specialistName" x-init="new TomSelect($el, {create: false, onChange: (val) => specialistName = val})" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="specialist_name" x-model="specialistName" x-init="let ts = new TomSelect($el, {create: false, onChange: (val) => specialistName = val}); $watch('specialistName', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر الأخصائي --</option>
                             @foreach($specialists as $sp)
                             <option value="{{ $sp->name }}">{{ $sp->name }} ({{ $sp->specialization }})</option>
@@ -562,9 +562,9 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">نوع وعنوان الجلسة <span class="text-rose-500">*</span></label>
-                        <select name="session_title" x-model="sessionTitle" x-init="new TomSelect($el, {create: true, onChange: (val) => sessionTitle = val})" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="session_title" x-model="sessionTitle" x-init="let ts = new TomSelect($el, {create: true, onChange: (val) => sessionTitle = val}); $watch('sessionTitle', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر عنوان الجلسة --</option>
                             @foreach($sessionTypes as $st)
                             <option value="{{ $st }}">{{ $st }}</option>
@@ -572,14 +572,14 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">تاريخ الجلسة <span class="text-rose-500">*</span></label>
                         <input type="date" name="session_date" x-model="sessionDate" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
                     </div>
 
-                    <div>
+                    <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">القاعة / الغرفة <span class="text-rose-500">*</span></label>
-                        <select name="room_name" x-model="roomName" x-init="new TomSelect($el, {create: true, onChange: (val) => roomName = val})" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="room_name" x-model="roomName" x-init="let ts = new TomSelect($el, {create: true, onChange: (val) => roomName = val}); $watch('roomName', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر القاعة --</option>
                             @foreach($rooms as $rm)
                             <option value="{{ $rm }}">{{ $rm }}</option>
@@ -587,17 +587,17 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">وقت بدء الجلسة <span class="text-rose-500">*</span></label>
                         <input type="time" name="start_time" x-model="startTime" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold font-mono">
                     </div>
 
-                    <div>
+                    <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">وقت انتهاء الجلسة</label>
                         <input type="time" name="end_time" x-model="endTime" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold font-mono">
                     </div>
 
-                    <div class="sm:col-span-2 p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-3">
+                    <div class="sm:col-span-2 p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-3" x-show="!isReplaceSpecialistMode && !isEditMode">
                         <div class="flex items-center justify-between">
                             <div>
                                 <span class="font-bold text-slate-800 block">تكرار الموعد (Recurring Weekly)</span>
@@ -620,24 +620,99 @@
                         </div>
                     </div>
 
-                    <div class="sm:col-span-2">
+                    <div class="sm:col-span-2" x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">ملاحظات إضافية للجلسة (اختياري):</label>
                         <textarea name="notes" x-model="notes" rows="2" placeholder="اكتب أي تعليمات للأهل أو تجهيزات للقاعة..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white leading-relaxed"></textarea>
                     </div>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                    <button type="button" @click="addModalOpen = false" class="px-5 py-2.5 rounded-2xl text-slate-500 font-bold hover:bg-slate-100 text-xs">
+                    <button type="button" @click="addModalOpen = false; isReplaceSpecialistMode = false;" class="px-5 py-2.5 rounded-2xl text-slate-500 font-bold hover:bg-slate-100 text-xs">
                         إلغاء
                     </button>
                     <button type="submit" class="px-8 py-3 rounded-2xl text-white font-black text-xs shadow-lg hover:opacity-95 transition flex items-center gap-2" style="background-color: #0d9488;">
                         <i class="fa-solid fa-floppy-disk"></i>
-                        <span>حفظ وجدولة الموعد</span>
+                        <span x-text="isReplaceSpecialistMode ? 'تأكيد استبدال الأخصائي' : 'حفظ وجدولة الموعد'"></span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    <!-- نافذة عرض جميع جلسات اليوم -->
+    <div x-show="dayModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div @click.away="dayModalOpen = false" class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[85vh]">
+            
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-teal-700 bg-teal-50 text-lg">
+                        <i class="fa-solid fa-calendar-day"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-lg text-slate-900">جلسات يوم <span x-text="selectedDayStr"></span></h3>
+                        <p class="text-xs text-slate-500 font-semibold mt-0.5">
+                            يوجد <span class="font-bold text-teal-600" x-text="daySessions.length"></span> جلسات مجدولة في هذا اليوم.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button @click="dayModalOpen = false; openAddModal(selectedDayStr)" class="px-4 py-2 rounded-xl bg-teal-50 text-teal-700 font-bold hover:bg-teal-600 hover:text-white transition text-xs shadow-sm flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> إضافة جلسة
+                    </button>
+                    <button @click="dayModalOpen = false" class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center shadow-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-3 bg-slate-50/50 flex-1">
+                <template x-for="sess in daySessions" :key="sess.id">
+                    <div @click="dayModalOpen = false; openSessionDetail(sess)" 
+                         class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-teal-400 hover:shadow-md transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                        
+                        <div class="flex items-center gap-4">
+                            <div :class="{
+                                'bg-orange-100 text-orange-700': sess.status === 'cancelled',
+                                'bg-emerald-100 text-emerald-700': sess.attendance_status === 'attended' && sess.status !== 'cancelled',
+                                'bg-rose-100 text-rose-700': sess.attendance_status === 'absent' && sess.status !== 'cancelled',
+                                'bg-blue-100 text-blue-700': sess.attendance_status === 'pending' && sess.status !== 'cancelled'
+                            }" class="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-sm border border-white/50">
+                                <span class="font-mono font-black text-sm" x-text="sess.start_time.substring(0, 5)"></span>
+                                <span class="text-[9px] font-bold opacity-80" x-text="sess.end_time ? sess.end_time.substring(0, 5) : ''"></span>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-black text-sm text-slate-800" x-text="sess.child_name"></h4>
+                                <div class="text-xs text-slate-500 font-semibold mt-1 flex items-center gap-3">
+                                    <span class="flex items-center gap-1"><i class="fa-solid fa-user-doctor text-slate-400"></i> <span x-text="sess.specialist_name"></span></span>
+                                    <span class="flex items-center gap-1"><i class="fa-solid fa-door-open text-slate-400"></i> <span x-text="sess.room_name"></span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 shrink-0">
+                            <span x-show="sess.status === 'cancelled'" class="px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 border border-orange-100 text-[10px] font-black">
+                                <i class="fa-solid fa-ban ml-0.5"></i> ملغاة / اعتذار
+                            </span>
+                            <span x-show="sess.attendance_status === 'attended' && sess.status !== 'cancelled'" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-black">
+                                <i class="fa-solid fa-check ml-0.5"></i> تم الحضور
+                            </span>
+                            <span x-show="sess.attendance_status === 'absent' && sess.status !== 'cancelled'" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-100 text-[10px] font-black">
+                                <i class="fa-solid fa-xmark ml-0.5"></i> غياب
+                            </span>
+                            <span x-show="sess.attendance_status === 'pending' && sess.status !== 'cancelled'" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-black">
+                                <i class="fa-regular fa-clock ml-0.5"></i> قيد الانتظار
+                            </span>
+                            
+                            <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-teal-50 group-hover:text-teal-600 transition">
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
     <!-- نافذة نقل الجلسات (اعتذار أخصائي) -->
     <div x-show="transferModalOpen" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
         <div @click.away="transferModalOpen = false" class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
@@ -716,6 +791,9 @@ function masterCalendarApp() {
         transferModalOpen: false,
         detailModalOpen: false,
         selectedSession: null,
+        dayModalOpen: false,
+        daySessions: [],
+        selectedDayStr: '',
         addModalOpen: false,
         isEditMode: false,
         editSessionId: null,
@@ -738,8 +816,28 @@ function masterCalendarApp() {
         paidAmount: 150,
         paymentMethod: 'cash',
 
+        isReplaceSpecialistMode: false,
+        
         init() {
             this.calculateCalendar();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const replaceSessionId = urlParams.get('replace_session_id');
+            if (replaceSessionId) {
+                const sess = this.allSessions.find(s => s.id == replaceSessionId);
+                if (sess) {
+                    this.openEditModal(sess);
+                    this.isReplaceSpecialistMode = true;
+                }
+            } else {
+                const editSessionId = urlParams.get('edit_session_id');
+                if (editSessionId) {
+                    const sess = this.allSessions.find(s => s.id == editSessionId);
+                    if (sess) {
+                        this.openEditModal(sess);
+                    }
+                }
+            }
         },
 
         calculateCalendar() {
@@ -797,25 +895,24 @@ function masterCalendarApp() {
             return date < today;
         },
 
-        isSessionPast(sess) {
-            let sessionDate = new Date(sess.session_date);
+        getTodayString() {
             let today = new Date();
-            today.setHours(0,0,0,0);
-            return sessionDate < today;
+            let y = today.getFullYear();
+            let m = String(today.getMonth() + 1).padStart(2, '0');
+            let d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        },
+
+        isSessionPast(sess) {
+            return sess.session_date < this.getTodayString();
         },
 
         isSessionFuture(sess) {
-            let sessionDate = new Date(sess.session_date);
-            let today = new Date();
-            today.setHours(0,0,0,0);
-            return sessionDate > today;
+            return sess.session_date > this.getTodayString();
         },
 
         isSessionToday(sess) {
-            let sessionDate = new Date(sess.session_date);
-            let today = new Date();
-            today.setHours(0,0,0,0);
-            return sessionDate.getTime() === today.getTime();
+            return sess.session_date === this.getTodayString();
         },
 
         getSessionsForDay(day) {
@@ -854,7 +951,9 @@ function masterCalendarApp() {
         handleDayClick(day) {
             let sessions = this.getSessionsForDay(day);
             if (sessions.length > 0) {
-                this.openSessionDetail(sessions[0]);
+                this.daySessions = sessions;
+                this.selectedDayStr = this.formatDate(day);
+                this.dayModalOpen = true;
             } else {
                 if (!this.isPast(day)) {
                     this.openAddModalForDay(day);
@@ -863,18 +962,21 @@ function masterCalendarApp() {
         },
 
         openAddModalForDay(day) {
+            this.isReplaceSpecialistMode = false;
             this.isEditMode = false;
             this.sessionDate = this.formatDate(day);
             this.addModalOpen = true;
         },
 
         openAddModal(dateStr) {
+            this.isReplaceSpecialistMode = false;
             this.isEditMode = false;
             this.sessionDate = dateStr || '{{ date('Y-m-d') }}';
             this.addModalOpen = true;
         },
 
         openEditModal(sess) {
+            this.isReplaceSpecialistMode = false;
             this.isEditMode = true;
             this.editSessionId = sess.id;
             this.childId = sess.child_id;

@@ -181,16 +181,15 @@
                 <div>
                     <label class="block font-bold text-slate-700 mb-1.5">نظام المحاسبة والماليات <span class="text-rose-500">*</span></label>
                     <select name="salary_type" x-model="salaryType" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                        <option value="per_session">مبلغ ثابت لكل جلسة منفذة</option>
-                        <option value="percentage">نسبة مئوية من سعر الجلسة (%)</option>
                         <option value="monthly">راتب شهري ثابت</option>
+                        <option value="per_session">مبلغ ثابت لكل جلسة منفذة</option>
                     </select>
                 </div>
 
                 <!-- قيمة الجلسة أو النسبة أو الراتب -->
                 <div>
                     <label class="block font-bold text-slate-700 mb-1.5">
-                        <span x-text="salaryType === 'per_session' ? 'قيمة الجلسة للأخصائي (ج.م)' : (salaryType === 'percentage' ? 'نسبة الأخصائي من الجلسة (%)' : 'الراتب الشهري الثابت (ج.م)')"></span>
+                        <span x-text="salaryType === 'per_session' ? 'قيمة الجلسة للأخصائي (ج.م)' : 'الراتب الشهري الثابت (ج.م)'"></span>
                     </label>
                     <input type="number" step="0.01" name="session_rate" value="{{ old('session_rate', 150) }}" placeholder="0.00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-mono font-bold text-sm text-teal-700">
                 </div>

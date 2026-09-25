@@ -395,6 +395,11 @@
                                 <label class="block font-bold text-slate-700 text-xs mb-1.5">تصنيفات المصروفات (Expense Categories)</label>
                                 <textarea name="dropdown_expense_categories" rows="6" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold text-xs" dir="auto">{{ implode("\n", \App\Http\Controllers\SettingController::getDropdownList('expense_categories')) }}</textarea>
                             </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 text-xs mb-1.5">تصنيف الحالة الرئيسي للطفل (Diagnoses)</label>
+                                <textarea name="dropdown_diagnoses" rows="6" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold text-xs" dir="auto">{{ implode("\n", \App\Http\Controllers\SettingController::getDropdownList('diagnoses')) }}</textarea>
+                            </div>
                         </div>
                     </div>
                 </div>

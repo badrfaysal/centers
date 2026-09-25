@@ -47,6 +47,7 @@ class DoctorSessionController extends Controller
         // 3. رسائل واستفسارات أولياء الأمور الموجهة للأخصائي
         $parentMessages = ParentMessage::with('child')
             ->where('subject', 'not like', '%اعتذار طارئ عن يوم عمل%')
+            ->where('subject', 'not like', '%اعتذار طارئ للأخصائي%')
             ->latest()
             ->get()
             ->groupBy('child_id');
@@ -58,6 +59,7 @@ class DoctorSessionController extends Controller
         $totalSessionsCount = TherapySession::count();
         $pendingMessagesCount = ParentMessage::whereNull('doctor_reply')
             ->where('subject', 'not like', '%اعتذار طارئ عن يوم عمل%')
+            ->where('subject', 'not like', '%اعتذار طارئ للأخصائي%')
             ->count();
         $totalCommentsCount = VideoComment::where('sender_type', 'parent')->count();
         $avgRating = $ratings->avg('rating') ? number_format($ratings->avg('rating'), 1) : '5.0';

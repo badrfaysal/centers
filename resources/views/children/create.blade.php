@@ -205,8 +205,8 @@
                     <div>
                         <label class="block font-bold text-slate-700 mb-1.5">تصنيف الحالة الرئيسي <span class="text-rose-500">*</span></label>
                         <select name="diagnosis_category" x-model="diagnosisCategory" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                            @foreach($diagnoses as $key => $label)
-                            <option value="{{ $key }}">{{ $label }}</option>
+                            @foreach($diagnoses as $label)
+                            <option value="{{ $label }}">{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -231,10 +231,16 @@
                                 <p class="text-[11px] text-slate-400">أضف كل تشخيص أو اضطراب في سطر مستقل لسهولة المتابعة وخطة العلاج</p>
                             </div>
 
-                            <button type="button" @click="addDiagnosis()" class="px-3.5 py-1.5 rounded-xl text-white font-bold text-xs shadow-xs hover:opacity-90 active:scale-95 transition flex items-center gap-1.5" style="background-color: #0d9488;">
-                                <i class="fa-solid fa-plus text-xs"></i>
-                                <span>إضافة سطر تشخيص</span>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="diagnoses = ['لم يتم التشخيص بعد']" class="px-3.5 py-1.5 rounded-xl bg-amber-100 text-amber-700 font-bold text-xs shadow-xs hover:bg-amber-200 transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-question text-xs"></i>
+                                    <span>لم يتم التشخيص بعد</span>
+                                </button>
+                                <button type="button" @click="addDiagnosis()" class="px-3.5 py-1.5 rounded-xl text-white font-bold text-xs shadow-xs hover:opacity-90 active:scale-95 transition flex items-center gap-1.5" style="background-color: #0d9488;">
+                                    <i class="fa-solid fa-plus text-xs"></i>
+                                    <span>إضافة سطر تشخيص</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- قائمة السطور الديناميكية -->
@@ -266,15 +272,6 @@
                         <input type="text" name="neurologist_name" value="{{ old('neurologist_name') }}" placeholder="مثال: د. مجدي يوسف - استشاري مخ وأعصاب أطفال" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-semibold">
                     </div>
 
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1.5">باقة الجلسات المبدئية</label>
-                        <select name="package_type" x-model="packageType" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                            @foreach($packages as $pkey => $plabel)
-                            <option value="{{ $pkey }}">{{ $plabel }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
                     <div class="sm:col-span-2">
                         <label class="block font-bold text-slate-700 mb-1.5">اختبارات ومقاييس الذكاء السابقة (IQ Assessments)</label>
                         <textarea name="iq_tests_history" rows="2" placeholder="مثال: تم عمل مقياس ستانفورد بينيه (الدرجة 82)، مقياس جيليام للتوحد (درجة احتمال خفيف)، اختبار اللغة المعرب..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white"></textarea>
@@ -282,7 +279,16 @@
 
                     <div class="sm:col-span-2">
                         <label class="block font-bold text-slate-700 mb-1.5">الأدوية والعلاجات التي يتناولها بانتظام (Current Medications)</label>
-                        <textarea name="current_medications" rows="2" placeholder="مثال: كونسيرتا 18 مجم صباحاً، دواء تيجريتول، مكمل أوميجا 3، فيتامين د..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white"></textarea>
+                        <div class="space-y-3">
+                            <textarea name="current_medications" rows="2" placeholder="مثال: كونسيرتا 18 مجم صباحاً، دواء تيجريتول، مكمل أوميجا 3، فيتامين د..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white">{{ old('current_medications') }}</textarea>
+                            <div>
+                                <label class="flex items-center gap-2 cursor-pointer w-fit px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition">
+                                    <i class="fa-solid fa-cloud-arrow-up text-blue-500"></i>
+                                    <span>إرفاق صورة روشتة أو علاج</span>
+                                    <input type="file" name="medications_image" accept="image/*" class="hidden" onchange="this.previousElementSibling.textContent = this.files[0].name">
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div>

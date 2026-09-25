@@ -103,8 +103,13 @@ class AuditLog extends Model
                 
                 if ($oldValue != $newValue) {
                     $humanKey = $dictionary[$key] ?? $key;
-                    $humanOld = $valueTranslations[$oldValue] ?? $oldValue;
-                    $humanNew = $valueTranslations[$newValue] ?? $newValue;
+                    
+                    // تحويل القيم التي قد تكون مصفوفات إلى نصوص لتجنب خطأ Illegal offset type
+                    $oldValScalar = is_array($oldValue) ? json_encode($oldValue, JSON_UNESCAPED_UNICODE) : (is_scalar($oldValue) ? $oldValue : (string)$oldValue);
+                    $newValScalar = is_array($newValue) ? json_encode($newValue, JSON_UNESCAPED_UNICODE) : (is_scalar($newValue) ? $newValue : (string)$newValue);
+
+                    $humanOld = (is_scalar($oldValue) && isset($valueTranslations[$oldValue])) ? $valueTranslations[$oldValue] : $oldValScalar;
+                    $humanNew = (is_scalar($newValue) && isset($valueTranslations[$newValue])) ? $valueTranslations[$newValue] : $newValScalar;
                     
                     if ($humanOld === null || $humanOld === '') $humanOld = '(فارغ)';
                     if ($humanNew === null || $humanNew === '') $humanNew = '(فارغ)';

@@ -69,6 +69,7 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::get('/calendar', [ScheduleController::class, 'index'])->name('calendar.index');
     Route::get('/doctor-portal/timetable', [ScheduleController::class, 'specialistTimetable'])->name('doctor.timetable');
     Route::post('/doctor-portal/timetable/apologize-day', [ScheduleController::class, 'apologizeDay'])->name('doctor.timetable.apologize');
+    Route::post('/doctor-portal/timetable/apologize-session/{sessionSchedule}', [ScheduleController::class, 'apologizeSession'])->name('doctor.timetable.apologizeSession');
     Route::post('/schedules', [ScheduleController::class, 'store'])->name('schedules.store');
     Route::post('/schedule/{schedule}/attend-pay', [\App\Http\Controllers\ScheduleController::class, 'storeAttendanceAndPayment'])->name('schedule.attend_pay');
     Route::get('/api/check-prepaid', [\App\Http\Controllers\ScheduleController::class, 'checkPrepaid'])->name('api.check_prepaid');

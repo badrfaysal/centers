@@ -154,6 +154,14 @@ class Child extends Model
         return "https://api.dicebear.com/7.x/initials/svg?seed={$seed}&backgroundColor=0d9488&fontFamily=Cairo&fontSize=40&bold=true";
     }
 
+    public function getMedicationsImageUrlAttribute(): ?string
+    {
+        if ($this->medications_file) {
+            return asset('storage/' . $this->medications_file);
+        }
+        return null;
+    }
+
     /**
      * Generate next available child code (e.g. CH-1001, CH-1002).
      */

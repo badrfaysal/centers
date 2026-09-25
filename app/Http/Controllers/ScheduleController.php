@@ -190,6 +190,43 @@ class ScheduleController extends Controller
     }
 
     /**
+     * Apologize for a specific session for a specialist.
+     */
+    public function apologizeSession(Request $request, SessionSchedule $sessionSchedule)
+    {
+        $validated = $request->validate([
+            'notes' => 'nullable|string'
+        ]);
+
+        if ($sessionSchedule->status === 'cancelled') {
+            return back()->with('error', 'هذه الجلسة ملغاة بالفعل.');
+        }
+
+        // Add note indicating apology and cancel the session
+        $newNote = "اعتذار الأخصائي لظروف طارئة";
+        if (!empty($validated['notes'])) {
+            $newNote .= " - " . $validated['notes'];
+        }
+        $sessionSchedule->notes = $sessionSchedule->notes ? $sessionSchedule->notes . "\n" . $newNote : $newNote;
+        $sessionSchedule->status = 'cancelled';
+        $sessionSchedule->save();
+
+        $child = $sessionSchedule->child;
+        if ($child) {
+            \App\Models\ParentMessage::create([
+                'child_id'       => $child->id,
+                'parent_name'    => $child->parent_name ?: 'ولي الأمر',
+                'recipient_type' => 'center',
+                'subject'        => 'اعتذار طارئ للأخصائي عن الجلسة',
+                'message'        => "نعتذر لكم، تم الاعتذار عن جلسة اليوم للأخصائي ({$sessionSchedule->specialist_name}) بتاريخ {$sessionSchedule->session_date} لظروف طارئة. سيتم إشعاركم في حال تم استبدال الأخصائي بأخصائي آخر.",
+                'is_urgent'      => true,
+            ]);
+        }
+
+        return back()->with('success', 'تم تسجيل الاعتذار عن الجلسة بنجاح، وتم إشعار الإدارة وولي الأمر.');
+    }
+
+    /**
      * Store a newly created session schedule.
      */
     public function store(Request $request)
@@ -351,7 +388,26 @@ class ScheduleController extends Controller
         $validated['status'] = 'scheduled';
         $validated['attendance_status'] = 'pending';
 
+        $oldSpecialist = $schedule->specialist_name;
+
         $schedule->update($validated);
+
+        // Notify parent if specialist was replaced
+        if ($oldSpecialist !== $validated['specialist_name']) {
+            $child = $schedule->child;
+            if ($child) {
+                $dateStr = \Carbon\Carbon::parse($validated['session_date'])->format('Y-m-d');
+                \App\Models\ParentMessage::create([
+                    'child_id'       => $child->id,
+                    'parent_name'    => $child->parent_name ?: 'ولي الأمر',
+                    'recipient_type' => 'center',
+                    'subject'        => 'تحديث عاجل: استبدال أخصائي الجلسة',
+                    'message'        => "نحيطكم علماً بأنه تم تأكيد استبدال الأخصائي لجلسة طفلكم ({$child->name}) المجدولة بتاريخ {$dateStr}. سيقوم الأخصائي البديل ({$validated['specialist_name']}) بتقديم الجلسة بدلاً من الأخصائي ({$oldSpecialist}). شكراً لتفهمكم.",
+                    'is_urgent'      => true,
+                    'doctor_reply'   => 'تم تأكيد الموعد مع الأخصائي الجديد بالموعد المحدد.'
+                ]);
+            }
+        }
 
         return redirect()->back()->with('success', 'تم تعديل الموعد بنجاح!');
     }

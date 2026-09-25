@@ -74,6 +74,7 @@ class ChildController extends Controller
             'assistive_devices'   => 'nullable|string|max:150',
             'package_type'        => 'nullable|string|max:50',
             'status'              => 'required|in:active,on_hold,discharged',
+            'medications_image'   => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         $diagnosesList = [];
@@ -88,6 +89,11 @@ class ChildController extends Controller
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('children_photos', 'public');
             $validated['photo_path'] = $path;
+        }
+
+        if ($request->hasFile('medications_image')) {
+            $path = $request->file('medications_image')->store('medications', 'public');
+            $validated['medications_file'] = $path;
         }
 
         $child = Child::create($validated);
@@ -265,6 +271,7 @@ class ChildController extends Controller
             'assistive_devices'   => 'nullable|string|max:150',
             'package_type'        => 'nullable|string|max:50',
             'status'              => 'required|in:active,on_hold,discharged',
+            'medications_image'   => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         $diagnosesList = [];
@@ -279,6 +286,11 @@ class ChildController extends Controller
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('children_photos', 'public');
             $validated['photo_path'] = $path;
+        }
+
+        if ($request->hasFile('medications_image')) {
+            $path = $request->file('medications_image')->store('medications', 'public');
+            $validated['medications_file'] = $path;
         }
 
         $child->update($validated);
@@ -299,16 +311,7 @@ class ChildController extends Controller
 
     private function getDiagnosesCategories(): array
     {
-        return [
-            'speech' => 'تأخر نمو لغوي ونطق (لدغات / تلعثم)',
-            'autism' => 'طيف توحد (ASD) وتواصل اجتماعي',
-            'adhd' => 'فرط حركة وتشتت انتباه (ADHD)',
-            'hearing' => 'ضعف سمعي / زراعة قوقعة إلكترونية',
-            'down' => 'متلازمة داون وتأهيل شامل',
-            'learning' => 'صعوبات تعلم وعسر قراءة (Dyslexia)',
-            'behavior' => 'تعديل سلوك وعناد واضطرابات انفعالية',
-            'other' => 'تشخيص أو تقييم أولي آخر',
-        ];
+        return \App\Http\Controllers\SettingController::getDropdownList('diagnoses');
     }
 
     private function getPackagesList(): array

@@ -638,6 +638,71 @@
                             </a>
                         </div>
                     </div>
+                    @elseif(Auth::check() && Auth::user()->role === 'parent')
+                    @php
+                        $parentChild = \App\Models\Child::where('user_id', Auth::id())->first();
+                        if(!$parentChild) $parentChild = \App\Models\Child::where('national_id', Auth::user()->username)->first();
+                        $parentUrgentMessagesCount = 0;
+                        $parentUrgentMessages = collect();
+                        if ($parentChild) {
+                            $parentUrgentMessages = \App\Models\ParentMessage::where('child_id', $parentChild->id)
+                                ->where(function($q) {
+                                    $q->where('subject', 'like', '%اعتذار%')->orWhere('is_urgent', true);
+                                })->latest()->take(5)->get();
+                            $parentUrgentMessagesCount = $parentUrgentMessages->count();
+                        }
+                    @endphp
+                    <!-- جرس إشعارات ولي الأمر -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" @click.away="open = false" class="relative w-11 h-11 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition focus:outline-none">
+                            <i class="fa-regular fa-bell text-lg"></i>
+                            @if($parentUrgentMessagesCount > 0)
+                                <span class="absolute top-2 right-2 w-3 h-3 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                            @endif
+                        </button>
+                        
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+                             class="absolute left-0 mt-3 w-80 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden z-50 origin-top-left"
+                             x-cloak>
+                             
+                            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 class="font-black text-slate-700">إشعارات المركز</h3>
+                                @if($parentUrgentMessagesCount > 0)
+                                    <span class="bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ $parentUrgentMessagesCount }} جديد</span>
+                                @endif
+                            </div>
+
+                            <div class="max-h-[320px] overflow-y-auto overscroll-contain">
+                                @forelse($parentUrgentMessages as $msg)
+                                    <div class="block p-4 border-b border-slate-50 hover:bg-slate-50 transition relative cursor-pointer" onclick="window.location.href='{{ route('parent.portal') }}?tab=messages'">
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500"></div>
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <h4 class="text-xs font-bold text-slate-700 mb-1 truncate">{{ $msg->subject }}</h4>
+                                                <p class="text-[11px] text-slate-500 truncate mb-1">{{ \Illuminate\Support\Str::limit($msg->message, 30) }}</p>
+                                                <span class="text-[9px] text-slate-400"><i class="fa-regular fa-clock ml-1"></i>{{ $msg->created_at->diffForHumans() }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="p-8 text-center flex flex-col items-center justify-center">
+                                        <i class="fa-solid fa-bell-slash text-3xl text-slate-200 mb-3"></i>
+                                        <p class="text-xs font-bold text-slate-500">لا توجد إشعارات جديدة</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
                     @endif
                 </div>
 
@@ -755,11 +820,15 @@
                                 let latest = newNotifications[0];
                                 
                                 let isDayApology = latest.title && latest.title.includes('اعتذار طارئ عن يوم عمل');
+                                let isSpecialistSessionApology = latest.title && latest.title.includes('اعتذار طارئ للأخصائي عن الجلسة');
                                 let headerHtml = '';
                                 
                                 if (isDayApology) {
                                     let specName = latest.sender.replace('الأخصائي: ', '');
                                     headerHtml = `<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #f5c6cb;">الأخصائي: <span style="color: #d9534f;">${specName}</span></div>`;
+                                } else if (isSpecialistSessionApology) {
+                                    let specName = latest.sender; 
+                                    headerHtml = `<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #f5c6cb;">عاجل - اعتذار أخصائي عن جلسة<br><span style="font-size: 0.8em; color: #d9534f;">الطفل: ${latest.child_name || ''}</span></div>`;
                                 } else {
                                     headerHtml = `<div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #ffeeba;">الطفل: <span style="color: #d9534f;">${latest.child_name || ''}</span></div>`;
                                 }
@@ -778,7 +847,7 @@
                                     showDenyButton: !isDayApology,
                                     showCancelButton: true,
                                     confirmButtonText: 'حسناً، فهمت',
-                                    denyButtonText: 'تسكين طفل آخر',
+                                    denyButtonText: isSpecialistSessionApology ? 'استبدال بأخصائي آخر' : 'تسكين طفل آخر',
                                     cancelButtonText: 'ذكرني لاحقاً',
                                     confirmButtonColor: '#0d9488',
                                     denyButtonColor: '#f59e0b',
@@ -792,11 +861,16 @@
                                         if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
                                         localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
                                     } else if (result.isDenied) {
-                                        // تسكين طفل آخر
+                                        // تسكين طفل آخر أو استبدال
                                         notifiedIds.push(latest.id);
                                         if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
                                         localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
-                                        window.location.href = '{{ route("calendar.index") }}';
+                                        
+                                        if (isSpecialistSessionApology && latest.session_id) {
+                                            window.location.href = '{{ route("calendar.index") }}?replace_session_id=' + latest.session_id;
+                                        } else {
+                                            window.location.href = '{{ route("calendar.index") }}';
+                                        }
                                     } else if (result.dismiss === Swal.DismissReason.cancel) {
                                         // ذكرني لاحقاً (بعد 15 دقيقة)
                                         let tempIgnored = JSON.parse(sessionStorage.getItem('temporarilyIgnoredUrgentIds') || '{}');

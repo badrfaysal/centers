@@ -181,9 +181,11 @@
                                   class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-mono shadow-2xs" 
                                   x-text="day"></span>
                             
+                            @if(auth()->user()->role === 'admin' || auth()->user()->role === 'user')
                             <button type="button" x-show="!isPast(day)" @click.stop="openAddModalForDay(day)" class="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white transition flex items-center justify-center text-[10px]" title="إضافة موعد بهذا اليوم">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
+                            @endif
                         </div>
 
                         <!-- قائمة الجلسات داخل هذا اليوم (Chips) -->
@@ -364,6 +366,18 @@
                                 <i class="fa-brands fa-whatsapp text-lg"></i>
                             </a>
                         </div>
+
+                        @if(auth()->user()->role === 'specialist')
+                        <!-- الاعتذار عن الجلسة (للأخصائي) -->
+                        <div class="text-center pt-2 border-t border-slate-100" x-show="selectedSession.status !== 'cancelled' && selectedSession.attendance_status === 'pending' && !isSessionPast(selectedSession)">
+                            <form :action="'/doctor-portal/timetable/apologize-session/' + selectedSession.id" method="POST" onsubmit="return confirm('هل أنت متأكد من رغبتك في الاعتذار عن هذه الجلسة؟ سيتم إشعار الإدارة وولي الأمر بذلك.')">
+                                @csrf
+                                <button type="submit" class="text-rose-500 hover:text-rose-700 text-xs font-bold hover:underline flex items-center justify-center gap-1.5 w-full">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> اعتذار عن هذه الجلسة لظروف طارئة
+                                </button>
+                            </form>
+                        </div>
+                        @endif
 
                         @if(auth()->user()->role === 'admin' || auth()->user()->role === 'user')
                         <!-- حذف الموعد -->
@@ -662,25 +676,24 @@ function specialistCalendarApp() {
             return date < today;
         },
 
-        isSessionPast(sess) {
-            let sessionDate = new Date(sess.session_date);
+        getTodayString() {
             let today = new Date();
-            today.setHours(0,0,0,0);
-            return sessionDate < today;
+            let y = today.getFullYear();
+            let m = String(today.getMonth() + 1).padStart(2, '0');
+            let d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        },
+
+        isSessionPast(sess) {
+            return sess.session_date < this.getTodayString();
         },
 
         isSessionFuture(sess) {
-            let sessionDate = new Date(sess.session_date);
-            let today = new Date();
-            today.setHours(0,0,0,0);
-            return sessionDate > today;
+            return sess.session_date > this.getTodayString();
         },
 
         isSessionToday(sess) {
-            let sessionDate = new Date(sess.session_date);
-            let today = new Date();
-            today.setHours(0,0,0,0);
-            return sessionDate.getTime() === today.getTime();
+            return sess.session_date === this.getTodayString();
         },
 
         getSessionsForDay(day) {

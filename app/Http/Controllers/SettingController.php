@@ -106,7 +106,17 @@ class SettingController extends Controller
                 'نظافة وصيانة',
                 'دعاية وتسويق',
                 'أخرى',
-            ]
+            ],
+            'diagnoses' => [
+                'تأخر نمو لغوي ونطق (لدغات / تلعثم)',
+                'طيف توحد (ASD) وتواصل اجتماعي',
+                'فرط حركة وتشتت انتباه (ADHD)',
+                'ضعف سمعي / زراعة قوقعة إلكترونية',
+                'متلازمة داون وتأهيل شامل',
+                'صعوبات تعلم وعسر قراءة (Dyslexia)',
+                'تعديل سلوك وعناد واضطرابات انفعالية',
+                'تشخيص أو تقييم أولي آخر',
+            ],
         ];
         
         return $defaults[$key] ?? [];
@@ -153,6 +163,7 @@ class SettingController extends Controller
             'dropdown_specializations' => 'nullable|string',
             'dropdown_services'        => 'nullable|string',
             'dropdown_expense_categories'=> 'nullable|string',
+            'dropdown_diagnoses'       => 'nullable|string',
         ]);
 
         $validated['whatsapp_auto_send'] = $request->has('whatsapp_auto_send');
@@ -173,8 +184,11 @@ class SettingController extends Controller
         if ($request->has('dropdown_expense_categories')) {
             $dropdown_lists['expense_categories'] = array_filter(array_map('trim', explode("\n", $request->dropdown_expense_categories)));
         }
+        if ($request->has('dropdown_diagnoses')) {
+            $dropdown_lists['diagnoses'] = array_filter(array_map('trim', explode("\n", $request->dropdown_diagnoses)));
+        }
         $validated['dropdown_lists'] = $dropdown_lists;
-        unset($validated['dropdown_rooms'], $validated['dropdown_session_types'], $validated['dropdown_specializations'], $validated['dropdown_services'], $validated['dropdown_expense_categories']);
+        unset($validated['dropdown_rooms'], $validated['dropdown_session_types'], $validated['dropdown_specializations'], $validated['dropdown_services'], $validated['dropdown_expense_categories'], $validated['dropdown_diagnoses']);
 
 
         // رفع صورة الواجهة الرئيسية للمركز (Hero Image) باستخدام Storage public disk

@@ -58,7 +58,7 @@
                     <span>متابعة طلبات الحجز</span>
                 </a>
 
-                <a href="https://wa.me/2{{ $child->phone }}" target="_blank" class="w-full sm:w-auto px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-2xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-emerald-100 shadow-2xs">
+                <a href="https://wa.me/201012345678" target="_blank" class="w-full sm:w-auto px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-2xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-emerald-100 shadow-2xs">
                     <i class="fa-brands fa-whatsapp text-sm"></i>
                     <span>واتساب المركز</span>
                 </a>
@@ -120,6 +120,69 @@
         <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
         <span>{{ session('success') }}</span>
     </div>
+    @endif
+
+    <!-- إشعارات عاجلة من الإدارة (مثل اعتذار الأخصائي) -->
+    @php
+        $urgentMessages = collect($messages)->filter(function($msg) {
+            $isApology = str_contains($msg->subject, 'اعتذار طارئ') || str_contains($msg->subject, 'استبدال أخصائي');
+            $isRecent = $msg->created_at && $msg->created_at->diffInDays(now()) <= 3; // إظهار لمدة 3 أيام
+            return ($msg->is_urgent || $isApology) && $isRecent;
+        })->take(2);
+    @endphp
+
+    @if($urgentMessages->count() > 0)
+        <div class="space-y-4">
+            @foreach($urgentMessages as $msg)
+            @php
+                $isReplacement = str_contains($msg->subject, 'استبدال أخصائي');
+                // ألوان مختلفة حسب نوع الإشعار
+                $bgGradient = $isReplacement ? 'from-indigo-500 to-blue-600 border-indigo-400' : 'from-rose-500 to-rose-600 border-rose-400';
+                $shadowColor = $isReplacement ? 'shadow-indigo-500/30' : 'shadow-rose-500/30';
+                $iconColor = $isReplacement ? 'text-indigo-700' : 'text-rose-700';
+                $textColor = $isReplacement ? 'text-indigo-50' : 'text-rose-50';
+                $btnColor = $isReplacement ? 'text-indigo-600 hover:bg-indigo-50' : 'text-rose-600 hover:bg-rose-50';
+                $timeColor = $isReplacement ? 'text-indigo-100' : 'text-rose-100';
+                $replyBg = $isReplacement ? 'bg-indigo-900/50 border-indigo-800/60' : 'bg-rose-900/50 border-rose-800/60';
+                $replyIcon = $isReplacement ? 'text-indigo-300' : 'text-rose-300';
+                $replyLabel = $isReplacement ? 'text-indigo-100' : 'text-rose-100';
+            @endphp
+            <div class="bg-gradient-to-l {{ $bgGradient }} rounded-3xl p-5 md:p-6 shadow-lg {{ $shadowColor }} text-white relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5 animate-in fade-in slide-in-from-top-4 duration-500 border">
+                
+                <!-- أيقونة الخلفية -->
+                <div class="absolute -right-6 -bottom-8 {{ $iconColor }} opacity-40 pointer-events-none transform -rotate-12">
+                    <i class="fa-solid fa-triangle-exclamation text-9xl"></i>
+                </div>
+
+                <div class="relative z-10 flex items-start gap-4 w-full">
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/20 shadow-sm">
+                        <i class="fa-solid {{ $isReplacement ? 'fa-arrows-rotate animate-spin-slow' : 'fa-bell animate-bounce' }} text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-black text-lg flex items-center gap-2 drop-shadow-md">
+                            {{ $msg->subject }}
+                        </h4>
+                        <p class="{{ $textColor }} font-semibold text-sm mt-1.5 leading-relaxed drop-shadow-sm">{{ $msg->message }}</p>
+                        
+                        @if($msg->doctor_reply)
+                        <div class="mt-3 inline-block px-4 py-2 {{ $replyBg }} rounded-xl text-xs font-bold border shadow-inner">
+                            <i class="fa-solid fa-info-circle mr-1 {{ $replyIcon }}"></i> <span class="{{ $replyLabel }}">تحديث الإدارة:</span> {{ $msg->doctor_reply }}
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="relative z-10 shrink-0 text-left flex flex-col gap-3 items-start md:items-end w-full md:w-auto mt-4 md:mt-0">
+                    <span class="text-xs font-bold {{ $timeColor }} block bg-black/10 px-3 py-1 rounded-lg border border-black/5 shadow-inner">
+                        <i class="fa-regular fa-clock ml-1"></i>{{ $msg->created_at ? $msg->created_at->diffForHumans() : '' }}
+                    </span>
+                    <a href="https://wa.me/201012345678?text={{ urlencode('مرحباً، أستفسر بخصوص الإشعار: ' . $msg->subject) }}" target="_blank" class="px-5 py-2.5 bg-white {{ $btnColor }} hover:scale-105 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-md w-full md:w-auto">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> تواصل للاستفسار
+                    </a>
+                </div>
+            </div>
+            @endforeach
+        </div>
     @endif
 
     <!-- ==================== 2. ???? ????????? ??????? (???? ???? ??????) ==================== -->

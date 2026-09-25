@@ -329,11 +329,16 @@
                 
                 <div>
                     <label class="block font-bold text-slate-700 mb-1.5">الأخصائي المعالج المنفذ <span class="text-rose-500">*</span></label>
-                    <select name="specialist_name" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
-                        @foreach($specialists as $sp)
-                        <option value="{{ $sp }}">{{ $sp }}</option>
-                        @endforeach
-                    </select>
+                    @if(auth()->check() && auth()->user()->role === 'specialist')
+                        <input type="text" readonly value="{{ auth()->user()->name }}" class="w-full p-3 bg-slate-100 border border-slate-200 rounded-2xl outline-none font-bold text-slate-600 cursor-not-allowed">
+                        <input type="hidden" name="specialist_name" value="{{ auth()->user()->name }}">
+                    @else
+                        <select name="specialist_name" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
+                            @foreach($specialists as $sp)
+                            <option value="{{ $sp }}">{{ $sp }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
 
                 <div>

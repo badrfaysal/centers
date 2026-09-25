@@ -230,7 +230,6 @@
                             <th class="py-3 px-3">الأخصائي والغرفة</th>
                             <th class="py-3 px-3">الموعد</th>
                             <th class="py-3 px-3">الحالة</th>
-                            <th class="py-3 px-3 text-center">التقرير والفيديو</th>
                             <th class="py-3 px-3 text-left">إجراءات سريعة</th>
                         </tr>
                     </thead>
@@ -281,37 +280,9 @@
                                 @endif
                             </td>
 
-                            <!-- التقرير والفيديو -->
-                            <td class="py-4 px-3 text-center">
-                                <div class="flex items-center justify-center gap-2.5">
-                                    @if($session['has_report'])
-                                        <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-xs" title="تم تسجيل تقرير الجلسة">
-                                            <i class="fa-solid fa-file-circle-check text-sm"></i>
-                                        </span>
-                                    @else
-                                        <a href="{{ route('doctor.sessions.create', ['child_id' => $session['child_id'] ?? 1]) }}" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:bg-brand-50 hover:text-brand-600 flex items-center justify-center text-xs transition" title="كتابة تقرير الجلسة">
-                                            <i class="fa-regular fa-file-lines text-sm"></i>
-                                        </a>
-                                    @endif
-
-                                    @if($session['has_video'])
-                                        <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xs shadow-xs" title="تم رفع فيديو لولي الأمر ({{ $session['video_duration'] }})">
-                                            <i class="fa-solid fa-video text-sm"></i>
-                                        </span>
-                                    @else
-                                        <a href="{{ route('doctor.sessions.create', ['child_id' => $session['child_id'] ?? 1]) }}" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-400 hover:bg-purple-50 hover:text-purple-600 flex items-center justify-center text-xs transition" title="رفع فيديو للطفل في الجلسة">
-                                            <i class="fa-solid fa-video-slash text-sm"></i>
-                                        </a>
-                                    @endif
-                                </div>
-                            </td>
-
                             <!-- إجراءات -->
                             <td class="py-4 px-3 text-left">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ route('children.show', $session['child_id'] ?? 1) }}" class="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-brand-600 hover:text-white text-slate-600 text-xs font-bold transition">
-                                        تفاصيل
-                                    </a>
                                     <a href="https://wa.me/2{{ preg_replace('/[^0-9]/', '', $session['parent_phone'] ?? '') }}" target="_blank" class="w-7 h-7 rounded-xl bg-green-50 text-green-600 hover:bg-green-600 hover:text-white flex items-center justify-center text-xs transition" title="تواصل واتساب مع الأب">
                                         <i class="fa-brands fa-whatsapp text-sm"></i>
                                     </a>

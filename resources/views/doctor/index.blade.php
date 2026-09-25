@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'بوابة الأخصائيين والتواصل مع أولياء الأمور')
 
@@ -123,12 +123,17 @@
                 </div>
 
                 <div>
-                    <select name="specialist" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" onchange="this.form.submit()">
-                        <option value="all">كل الأخصائيين</option>
-                        @foreach($specialists as $sp)
-                        <option value="{{ $sp }}" {{ request('specialist') === $sp ? 'selected' : '' }}>{{ $sp }}</option>
-                        @endforeach
-                    </select>
+                    @if(auth()->check() && auth()->user()->role === 'specialist')
+                        <input type="text" readonly value="{{ auth()->user()->name }}" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-2xl outline-none font-bold text-slate-600 cursor-not-allowed">
+                        <input type="hidden" name="specialist" value="{{ auth()->user()->name }}">
+                    @else
+                        <select name="specialist" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" onchange="this.form.submit()">
+                            <option value="all">كل الأخصائيين</option>
+                            @foreach($specialists as $sp)
+                            <option value="{{ $sp }}" {{ request('specialist') === $sp ? 'selected' : '' }}>{{ $sp }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
 
                 <div class="flex gap-2">

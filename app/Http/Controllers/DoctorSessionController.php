@@ -19,15 +19,20 @@ class DoctorSessionController extends Controller
     {
         $specialists = $this->getSpecialistsList();
 
+        $specialistFilter = $request->specialist;
+        if (auth()->check() && auth()->user()->role === 'specialist') {
+            $specialistFilter = auth()->user()->name;
+        }
+
         // 1. سجل الجلسات السابقة مجمع بالطفل
-        $childrenQuery = \App\Models\Child::whereHas('therapySessions', function ($q) use ($request) {
-            if ($request->filled('specialist') && $request->specialist !== 'all') {
-                $q->where('specialist_name', $request->specialist);
+        $childrenQuery = \App\Models\Child::whereHas('therapySessions', function ($q) use ($specialistFilter) {
+            if ($specialistFilter && $specialistFilter !== 'all') {
+                $q->where('specialist_name', $specialistFilter);
             }
-        })->with(['therapySessions' => function($q) use ($request) {
+        })->with(['therapySessions' => function($q) use ($specialistFilter) {
             $q->latest();
-            if ($request->filled('specialist') && $request->specialist !== 'all') {
-                $q->where('specialist_name', $request->specialist);
+            if ($specialistFilter && $specialistFilter !== 'all') {
+                $q->where('specialist_name', $specialistFilter);
             }
             $q->with('comments');
         }]);
@@ -46,8 +51,7 @@ class DoctorSessionController extends Controller
 
         // 3. رسائل واستفسارات أولياء الأمور الموجهة للأخصائي
         $parentMessages = ParentMessage::with('child')
-            ->where('subject', 'not like', '%اعتذار طارئ عن يوم عمل%')
-            ->where('subject', 'not like', '%اعتذار طارئ للأخصائي%')
+            ->where('recipient_type', 'specialist')
             ->latest()
             ->get()
             ->groupBy('child_id');
@@ -58,8 +62,7 @@ class DoctorSessionController extends Controller
         // إحصائيات سريعة للأخصائي
         $totalSessionsCount = TherapySession::count();
         $pendingMessagesCount = ParentMessage::whereNull('doctor_reply')
-            ->where('subject', 'not like', '%اعتذار طارئ عن يوم عمل%')
-            ->where('subject', 'not like', '%اعتذار طارئ للأخصائي%')
+            ->where('recipient_type', 'specialist')
             ->count();
         $totalCommentsCount = VideoComment::where('sender_type', 'parent')->count();
         $avgRating = $ratings->avg('rating') ? number_format($ratings->avg('rating'), 1) : '5.0';
@@ -150,6 +153,10 @@ class DoctorSessionController extends Controller
         }
 
         $validated['whatsapp_notified'] = $request->boolean('whatsapp_notify');
+
+        if (auth()->check() && auth()->user()->role === 'specialist') {
+            $validated['specialist_name'] = auth()->user()->name;
+        }
 
         $session = TherapySession::create($validated);
         $child = Child::findOrFail($validated['child_id']);

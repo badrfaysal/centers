@@ -167,7 +167,14 @@ class ScheduleController extends Controller
             return back()->with('error', 'لا توجد جلسات مجدولة (غير مكتملة) في هذا اليوم للاعتذار عنها.');
         }
 
-        // We DO NOT cancel the sessions! We keep them scheduled, but we notify the admin and parents.
+        // تحديث حالة الجلسات إلى ملغاة / معتذر عنها حتى يتغير لونها في الواجهة
+        $newNote = "اعتذار الأخصائي عن اليوم لظروف طارئة";
+        foreach ($sessions as $sessionSchedule) {
+            $sessionSchedule->notes = $sessionSchedule->notes ? $sessionSchedule->notes . "\n" . $newNote : $newNote;
+            $sessionSchedule->status = 'cancelled';
+            $sessionSchedule->save();
+        }
+
         $childrenIds = $sessions->pluck('child_id')->unique();
         
         $specialist = \App\Models\Specialist::where('name', $validated['specialist_name'])->first();
@@ -178,9 +185,9 @@ class ScheduleController extends Controller
 
             \App\Models\ParentMessage::create([
                 'child_id'       => $childId,
-                'parent_name'    => $child->parent_name ?: 'ولي الأمر',
+                'parent_name'    => 'الأخصائي: ' . $validated['specialist_name'],
                 'recipient_type' => 'center',
-                'subject'        => 'اعتذار طارئ للأخصائي - سيتم توفير بديل',
+                'subject'        => 'اعتذار طارئ عن يوم عمل: ' . $validated['session_date'],
                 'message'        => "نعتذر لكم، لقد اعتذر الأخصائي ({$validated['specialist_name']}) عن عمل يوم {$validated['session_date']} لظروف طارئة. يرجى العلم أنه جاري توفير أخصائي بديل لتغطية الجلسة في نفس الموعد.",
                 'is_urgent'      => true,
             ]);
@@ -215,7 +222,7 @@ class ScheduleController extends Controller
         if ($child) {
             \App\Models\ParentMessage::create([
                 'child_id'       => $child->id,
-                'parent_name'    => $child->parent_name ?: 'ولي الأمر',
+                'parent_name'    => 'الأخصائي: ' . $sessionSchedule->specialist_name,
                 'recipient_type' => 'center',
                 'subject'        => 'اعتذار طارئ للأخصائي عن الجلسة',
                 'message'        => "نعتذر لكم، تم الاعتذار عن جلسة اليوم للأخصائي ({$sessionSchedule->specialist_name}) بتاريخ {$sessionSchedule->session_date} لظروف طارئة. سيتم إشعاركم في حال تم استبدال الأخصائي بأخصائي آخر.",
@@ -574,7 +581,7 @@ class ScheduleController extends Controller
 
         $sessions = SessionSchedule::where('specialist_id', $fromSpecialist->id)
             ->whereDate('session_date', $validated['transfer_date'])
-            ->where('status', 'scheduled')
+            ->whereIn('status', ['scheduled', 'cancelled'])
             ->get();
 
         $count = 0;
@@ -582,6 +589,7 @@ class ScheduleController extends Controller
             $session->update([
                 'specialist_id' => $toSpecialist->id,
                 'specialist_name' => $toSpecialist->name,
+                'status' => 'scheduled'
             ]);
             $count++;
         }

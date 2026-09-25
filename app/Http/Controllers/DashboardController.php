@@ -269,7 +269,6 @@ class DashboardController extends Controller
                 
                 $sessions = \App\Models\SessionSchedule::with('child')->where('specialist_name', 'like', "%{$specName}%")
                     ->where('session_date', $dateStr)
-                    ->where('status', 'cancelled')
                     ->get();
                     
                 if ($sessions->count() > 0) {
@@ -293,6 +292,13 @@ class DashboardController extends Controller
                     ->first();
                 if ($latestCancelledSession) {
                     $sessionId = $latestCancelledSession->id;
+                    $sess = $latestCancelledSession;
+                    if ($sess->child) {
+                        $msgText = urlencode("نعتذر لإبلاغكم بأنه تم إلغاء جلسة طفلكم (" . $sess->child->name . ") المقررة اليوم نظراً لظرف طارئ للأخصائي (" . $sess->specialist_name . "). وسيتم التواصل معكم لتعويض الجلسة.");
+                        $waLink = "https://wa.me/" . preg_replace('/[^0-9]/', '', $sess->child->parent_phone ?? $sess->child->phone ?? '') . "?text=" . $msgText;
+                        $affectedChildrenHtml .= '<div class="mt-4 text-left border-t pt-3"><p class="text-sm font-bold text-slate-700 mb-2">إبلاغ ولي الأمر عبر الواتساب:</p>';
+                        $affectedChildrenHtml .= '<a href="' . $waLink . '" target="_blank" class="bg-emerald-50 text-emerald-700 p-2 rounded-lg text-[10px] font-bold flex items-center justify-between hover:bg-emerald-100 border border-emerald-200"><span class="truncate">' . $sess->child->name . '</span><i class="fa-brands fa-whatsapp text-lg"></i></a></div>';
+                    }
                 }
             }
 

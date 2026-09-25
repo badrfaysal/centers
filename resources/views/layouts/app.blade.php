@@ -844,10 +844,10 @@
                                         <br>
                                         <small style="color: #777;">تم الإرسال بواسطة: ${latest.sender}</small>
                                     `,
-                                    showDenyButton: !isDayApology,
+                                    showDenyButton: true,
                                     showCancelButton: true,
                                     confirmButtonText: 'حسناً، فهمت',
-                                    denyButtonText: isSpecialistSessionApology ? 'استبدال بأخصائي آخر' : 'تسكين طفل آخر',
+                                    denyButtonText: isDayApology ? 'نقل الجلسات لأخصائي آخر' : (isSpecialistSessionApology ? 'استبدال بأخصائي آخر' : 'تسكين طفل آخر'),
                                     cancelButtonText: 'ذكرني لاحقاً',
                                     confirmButtonColor: '#0d9488',
                                     denyButtonColor: '#f59e0b',
@@ -866,7 +866,9 @@
                                         if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
                                         localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
                                         
-                                        if (isSpecialistSessionApology && latest.session_id) {
+                                        if (isDayApology) {
+                                            window.location.href = '{{ route("calendar.index") }}?open_transfer=true';
+                                        } else if (isSpecialistSessionApology && latest.session_id) {
                                             window.location.href = '{{ route("calendar.index") }}?replace_session_id=' + latest.session_id;
                                         } else {
                                             window.location.href = '{{ route("calendar.index") }}';

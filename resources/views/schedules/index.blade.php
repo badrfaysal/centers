@@ -544,7 +544,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2" x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">اختر الطفل <span class="text-rose-500">*</span></label>
-                        <select name="child_id" x-model="childId" x-init="let ts = new TomSelect($el, {create: false, onChange: (val) => childId = val}); $watch('childId', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="child_id" x-model="childId" x-init="let ts = new TomSelect($el, {create: false, onChange: (val) => childId = val}); $watch('childId', val => ts.setValue(val));" :required="!isReplaceSpecialistMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر الطفل من القائمة --</option>
                             @foreach($children as $ch)
                             <option value="{{ $ch->id }}">{{ $ch->name }} (كود: {{ $ch->code }})</option>
@@ -554,7 +554,7 @@
 
                     <div class="sm:col-span-2">
                         <label class="block font-bold text-slate-700 mb-1.5">الأخصائي المعالج <span class="text-rose-500">*</span></label>
-                        <select name="specialist_name" x-model="specialistName" x-init="let ts = new TomSelect($el, {create: false, onChange: (val) => specialistName = val}); $watch('specialistName', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="specialist_name" x-model="specialistName" x-init="tsSpecialist = new TomSelect($el, {create: false, onChange: (val) => specialistName = val}); $watch('specialistName', val => tsSpecialist.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر الأخصائي --</option>
                             @foreach($specialists as $sp)
                             <option value="{{ $sp->name }}">{{ $sp->name }} ({{ $sp->specialization }})</option>
@@ -564,7 +564,7 @@
 
                     <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">نوع وعنوان الجلسة <span class="text-rose-500">*</span></label>
-                        <select name="session_title" x-model="sessionTitle" x-init="let ts = new TomSelect($el, {create: true, onChange: (val) => sessionTitle = val}); $watch('sessionTitle', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="session_title" x-model="sessionTitle" x-init="let ts = new TomSelect($el, {create: true, onChange: (val) => sessionTitle = val}); $watch('sessionTitle', val => ts.setValue(val));" :required="!isReplaceSpecialistMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر عنوان الجلسة --</option>
                             @foreach($sessionTypes as $st)
                             <option value="{{ $st }}">{{ $st }}</option>
@@ -574,12 +574,12 @@
 
                     <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">تاريخ الجلسة <span class="text-rose-500">*</span></label>
-                        <input type="date" name="session_date" x-model="sessionDate" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
+                        <input type="date" name="session_date" x-model="sessionDate" :required="!isReplaceSpecialistMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold">
                     </div>
 
                     <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">القاعة / الغرفة <span class="text-rose-500">*</span></label>
-                        <select name="room_name" x-model="roomName" x-init="let ts = new TomSelect($el, {create: true, onChange: (val) => roomName = val}); $watch('roomName', val => ts.setValue(val));" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
+                        <select name="room_name" x-model="roomName" x-init="let ts = new TomSelect($el, {create: true, onChange: (val) => roomName = val}); $watch('roomName', val => ts.setValue(val));" :required="!isReplaceSpecialistMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold" dir="rtl">
                             <option value="">-- اختر القاعة --</option>
                             @foreach($rooms as $rm)
                             <option value="{{ $rm }}">{{ $rm }}</option>
@@ -589,7 +589,7 @@
 
                     <div x-show="!isReplaceSpecialistMode">
                         <label class="block font-bold text-slate-700 mb-1.5">وقت بدء الجلسة <span class="text-rose-500">*</span></label>
-                        <input type="time" name="start_time" x-model="startTime" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold font-mono">
+                        <input type="time" name="start_time" x-model="startTime" :required="!isReplaceSpecialistMode" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white font-bold font-mono">
                     </div>
 
                     <div x-show="!isReplaceSpecialistMode">
@@ -817,26 +817,59 @@ function masterCalendarApp() {
         paymentMethod: 'cash',
 
         isReplaceSpecialistMode: false,
+        originalSpecialistName: null,
+        tsSpecialist: null,
         
         init() {
             this.calculateCalendar();
             
             const urlParams = new URLSearchParams(window.location.search);
             const replaceSessionId = urlParams.get('replace_session_id');
+            const editSessionId = urlParams.get('edit_session_id');
+            const openTransfer = urlParams.get('open_transfer');
+
+            if (openTransfer) {
+                this.transferModalOpen = true;
+                urlParams.delete('open_transfer');
+                const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                window.history.replaceState({}, '', newUrl);
+            }
+
             if (replaceSessionId) {
                 const sess = this.allSessions.find(s => s.id == replaceSessionId);
                 if (sess) {
                     this.openEditModal(sess);
                     this.isReplaceSpecialistMode = true;
+                    this.originalSpecialistName = sess.specialist_name;
+                    this.specialistName = '';
+                    
+                    this.$nextTick(() => {
+                        if (this.tsSpecialist) {
+                            this.tsSpecialist.disableOption(this.originalSpecialistName);
+                            let opt = this.tsSpecialist.getOption(this.originalSpecialistName);
+                            if (opt) {
+                                opt.style.opacity = '0.4';
+                                opt.style.pointerEvents = 'none';
+                                opt.style.backgroundColor = '#f1f5f9';
+                            }
+                            this.tsSpecialist.setValue('');
+                        }
+                    });
                 }
-            } else {
-                const editSessionId = urlParams.get('edit_session_id');
-                if (editSessionId) {
-                    const sess = this.allSessions.find(s => s.id == editSessionId);
-                    if (sess) {
-                        this.openEditModal(sess);
-                    }
+                
+                urlParams.delete('replace_session_id');
+                const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                window.history.replaceState({}, '', newUrl);
+                
+            } else if (editSessionId) {
+                const sess = this.allSessions.find(s => s.id == editSessionId);
+                if (sess) {
+                    this.openEditModal(sess);
                 }
+                
+                urlParams.delete('edit_session_id');
+                const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                window.history.replaceState({}, '', newUrl);
             }
         },
 

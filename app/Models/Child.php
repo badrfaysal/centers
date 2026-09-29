@@ -171,4 +171,9 @@ class Child extends Model
         $nextNumber = $lastChild ? ($lastChild->id + 1001) : 1001;
         return 'CH-' . $nextNumber;
     }
+
+    public function homeworks()
+    {
+        return $this->hasMany(Homework::class);
+    }
 }

@@ -147,8 +147,13 @@
                 $replyIcon = $isReplacement ? 'text-indigo-300' : 'text-rose-300';
                 $replyLabel = $isReplacement ? 'text-indigo-100' : 'text-rose-100';
             @endphp
-            <div class="bg-gradient-to-l {{ $bgGradient }} rounded-3xl p-5 md:p-6 shadow-lg {{ $shadowColor }} text-white relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5 animate-in fade-in slide-in-from-top-4 duration-500 border">
+            <div x-data="{ show: true }" x-show="show" x-transition.opacity.duration.300ms class="bg-gradient-to-l {{ $bgGradient }} rounded-3xl p-5 md:p-6 shadow-lg {{ $shadowColor }} text-white relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5 animate-in fade-in slide-in-from-top-4 duration-500 border">
                 
+                <!-- زر الإغلاق -->
+                <button @click="show = false" class="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-white/80 hover:text-white transition-colors z-20">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
                 <!-- أيقونة الخلفية -->
                 <div class="absolute -right-6 -bottom-8 {{ $iconColor }} opacity-40 pointer-events-none transform -rotate-12">
                     <i class="fa-solid fa-triangle-exclamation text-9xl"></i>
@@ -158,7 +163,7 @@
                     <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/20 shadow-sm">
                         <i class="fa-solid {{ $isReplacement ? 'fa-arrows-rotate animate-spin-slow' : 'fa-bell animate-bounce' }} text-xl"></i>
                     </div>
-                    <div class="flex-1">
+                    <div class="flex-1 ml-6 sm:ml-0">
                         <h4 class="font-black text-lg flex items-center gap-2 drop-shadow-md">
                             {{ $msg->subject }}
                         </h4>
@@ -614,9 +619,9 @@
             </form>
         </div>
 
-        <!-- سجل الرسائل السابقة -->
-        <div class="space-y-4">
-            @foreach($messages as $msg)
+        <!-- سجل الرسائل السابقة (واجهة الشات) -->
+        <div class="bg-slate-50/80 border border-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col space-y-6 max-h-[600px] overflow-y-auto" style="background-image: url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E');">
+            @foreach($messages->sortBy('created_at') as $msg)
             @php
                 $isSpecialistApology = str_contains($msg->subject, 'اعتذار طارئ للأخصائي');
                 $isDayApology = str_contains($msg->subject, 'اعتذار طارئ عن يوم عمل');
@@ -625,47 +630,59 @@
             @endphp
             
             @if($isApology)
-            <div class="bg-rose-50 rounded-3xl p-6 border border-rose-200 shadow-sm space-y-3 relative overflow-hidden">
-                <div class="absolute -left-4 -top-4 text-rose-100 opacity-30 pointer-events-none">
-                    <i class="fa-solid fa-triangle-exclamation text-7xl"></i>
-                </div>
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between text-xs pb-2 border-b border-rose-200">
-                        <span class="font-black text-rose-800 flex items-center gap-2">
-                            <i class="fa-solid fa-bell text-rose-600 animate-pulse"></i>
-                            إشعار عاجل من الإدارة ({{ $msg->subject }})
-                        </span>
-                        <span class="text-rose-500 font-mono font-bold">{{ $msg->created_at ? $msg->created_at->format('Y-m-d') : '' }}</span>
-                    </div>
-                    <p class="text-sm font-bold text-rose-900 mt-2 leading-relaxed">{{ $msg->message }}</p>
-
+            <!-- System / Apology message -->
+            <div class="flex justify-center my-2">
+                <div class="bg-rose-100/90 text-rose-800 text-xs px-4 py-2 rounded-2xl shadow-sm max-w-[90%] text-center border border-rose-200">
+                    <span class="font-black flex items-center justify-center gap-1.5 mb-1 text-[10px]">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> إشعار عاجل ({{ $msg->subject }})
+                    </span>
+                    <p class="font-bold mb-1">{{ $msg->message }}</p>
+                    <span class="text-[9px] text-rose-600 font-mono">{{ $msg->created_at ? $msg->created_at->format('h:i A - Y-m-d') : '' }}</span>
                     @if($msg->doctor_reply)
-                    <div class="mt-3 p-3.5 rounded-2xl bg-white border border-rose-100 text-rose-950 text-xs space-y-1 shadow-sm">
-                        <span class="font-bold text-teal-700 flex items-center gap-1.5"><i class="fa-solid fa-check-circle"></i> تحديث من الإدارة:</span>
-                        <p class="text-slate-800 font-bold text-sm">{{ $msg->doctor_reply }}</p>
+                    <div class="mt-2 pt-2 border-t border-rose-200/50 text-[11px] font-bold text-teal-800">
+                        <span class="block text-[9px] text-teal-600 mb-0.5">تحديث من الإدارة:</span>
+                        {{ $msg->doctor_reply }}
                     </div>
                     @endif
                 </div>
             </div>
             @else
-            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-3">
-                <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
-                    <span class="font-black text-slate-800">{{ $msg->subject ?? 'رسالة لولي الأمر' }}</span>
-                    <span class="text-slate-400 font-mono">{{ $msg->created_at ? $msg->created_at->format('Y-m-d') : '' }}</span>
+            <!-- Parent Message (Sent) -->
+            <div class="flex flex-col items-end max-w-[85%] sm:max-w-[75%] self-end">
+                <div class="flex items-end gap-2 mb-1 px-1 flex-row-reverse">
+                    <span class="text-[10px] font-bold text-slate-500">أنت</span>
+                    <span class="text-[9px] text-slate-400 font-mono">{{ $msg->created_at ? $msg->created_at->format('h:i A') : '' }}</span>
                 </div>
-                <p class="text-xs text-slate-600">{{ $msg->message }}</p>
+                <div class="bg-teal-50 p-3 sm:p-4 rounded-2xl rounded-tl-none border border-teal-100 shadow-sm relative">
+                    @if($msg->subject)
+                    <h5 class="font-black text-[11px] text-teal-800 mb-1 border-b border-teal-100 pb-1">{{ $msg->subject }}</h5>
+                    @endif
+                    <p class="text-xs text-teal-900 leading-relaxed font-medium whitespace-pre-wrap">{{ $msg->message }}</p>
+                </div>
+            </div>
 
-                @if($msg->doctor_reply)
-                <div class="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-950 text-xs space-y-1">
-                    <span class="font-bold text-blue-900">رد الأخصائي ({{ $msg->replied_by ?? 'الاستشاري' }}):</span>
-                    <p class="text-slate-700">{{ $msg->doctor_reply }}</p>
+            <!-- Doctor Reply (Received) -->
+            @if($msg->doctor_reply)
+            <div class="flex flex-col items-start max-w-[85%] sm:max-w-[75%] self-start mt-2">
+                <div class="flex items-end gap-2 mb-1 px-1">
+                    <span class="text-[10px] font-bold text-blue-700">الأخصائي / المركز ({{ $msg->replied_by ?? 'الاستشاري' }})</span>
+                    <span class="text-[9px] text-blue-500/70 font-mono">{{ $msg->replied_at ? $msg->replied_at->format('h:i A') : '' }}</span>
                 </div>
-                @else
-                <p class="text-[11px] text-amber-600 font-bold">بانتظار رد الأخصائي...</p>
-                @endif
+                <div class="bg-white p-3 sm:p-4 rounded-2xl rounded-tr-none border border-slate-200 shadow-sm relative">
+                    <p class="text-xs text-slate-700 leading-relaxed font-semibold whitespace-pre-wrap">{{ $msg->doctor_reply }}</p>
+                </div>
             </div>
             @endif
+            
+            @endif
             @endforeach
+            
+            @if($messages->isEmpty())
+                <div class="text-center text-slate-400 py-10">
+                    <i class="fa-regular fa-comments text-4xl mb-2 opacity-50"></i>
+                    <p class="font-bold text-sm">لا توجد رسائل سابقة</p>
+                </div>
+            @endif
         </div>
     </div>
 

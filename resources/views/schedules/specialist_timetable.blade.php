@@ -21,7 +21,12 @@
 
         <div class="flex flex-wrap items-center gap-2.5">
             <!-- مبدل الأخصائي السريع -->
-            @if(count($specialists) > 1)
+            @if(auth()->user()->role === 'specialist')
+            <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-500">الأخصائي:</span>
+                <span class="text-xs font-bold text-teal-700">{{ $selectedSpecialistName }}</span>
+            </div>
+            @elseif(count($specialists) > 1)
             <form action="{{ route('doctor.timetable') }}" method="GET" class="flex items-center gap-2">
                 <span class="text-xs font-bold text-slate-500">الأخصائي:</span>
                 <select name="specialist" onchange="this.form.submit()" class="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold shadow-xs outline-none focus:border-teal-500">
@@ -51,10 +56,26 @@
 
     <!-- رسائل النجاح إن وجدت -->
     @if(session('success'))
-    <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs font-bold flex items-center gap-3 animate-in fade-in">
-        <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
-        <span>{{ session('success') }}</span>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let snd = document.getElementById('successSound') || document.getElementById('bookingSound');
+            if (snd) {
+                snd.currentTime = 0;
+                snd.play().catch(e => console.log('Audio play failed:', e));
+            }
+            Swal.fire({
+                icon: 'success',
+                title: 'تم بنجاح!',
+                text: '{{ session("success") }}',
+                confirmButtonColor: '#10b981',
+                confirmButtonText: '<i class="fa-solid fa-check"></i> حسناً',
+                customClass: {
+                    popup: 'rounded-3xl',
+                    confirmButton: 'rounded-2xl px-6 py-2.5 font-bold shadow-md'
+                }
+            });
+        });
+    </script>
     @endif
 
     <!-- رسائل الخطأ تظهر كـ Popup أنيق -->

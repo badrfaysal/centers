@@ -278,7 +278,9 @@
                 },
 
                 playDing() {
-                    let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    // تم تغيير الصوت ليكون رنة احترافية وواضحة تليق بمركز أطفال
+                    let audio = new Audio('{{ asset("sounds/chime.wav") }}');
+                    audio.volume = 1.0; // التأكد من أن الصوت على أعلى درجة
                     audio.play().catch(e => console.error('Audio play error:', e));
                 },
 

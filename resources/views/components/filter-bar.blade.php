@@ -1,4 +1,4 @@
-﻿@props([
+@props([
     'searchPlaceholder' => 'ابحث...',
     'filters' => [], // e.g., ['diagnosis_category' => ['label' => 'التصنيف', 'options' => ['speech' => 'تخاطب', 'autism' => 'توحد']]]
     'sortOptions' => [], // e.g., ['name' => 'الاسم', 'created_at' => 'تاريخ الإضافة']

@@ -120,20 +120,6 @@
                     الكل ({{ $messages->total() }})
                 </a>
 
-                <a href="{{ route('admin.parent-notes.index', ['filter' => 'new']) }}" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 {{ request('filter') === 'new' ? 'bg-rose-600 text-white font-black' : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200' }}">
-                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                    <span>جديدة بانتظار الرد ({{ $newNotesCount }})</span>
-                </a>
-
-                <a href="{{ route('admin.parent-notes.index', ['filter' => 'urgent']) }}" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1 {{ request('filter') === 'urgent' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200' }}">
-                    <i class="fa-solid fa-bolt text-xs"></i>
-                    <span>عاجلة وهامة ({{ $urgentNotesCount }})</span>
-                </a>
-
-                <a href="{{ route('admin.parent-notes.index', ['filter' => 'resolved']) }}" class="px-3.5 py-2 rounded-xl transition {{ request('filter') === 'resolved' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200' }}">
-                    تم الرد والحل ({{ $resolvedNotesCount }})
-                </a>
-
                 <a href="{{ route('admin.parent-notes.index', ['recipient' => 'center']) }}" class="px-3.5 py-2 rounded-xl transition {{ request('recipient') === 'center' ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200' }}">
                     موجهة لإدارة المركز
                 </a>
@@ -214,62 +200,74 @@
                     </div>
                 </div>
 
-                <!-- محتوى رسالة وملاحظة ولي الأمر -->
-                <div class="p-4 rounded-2xl bg-purple-50/60 border border-purple-100/80 space-y-1.5 text-xs">
-                    @if($msg->subject)
-                    <h5 class="font-black text-purple-950 flex items-center gap-1.5">
-                        <i class="fa-solid fa-tag text-purple-600 text-[10px]"></i>
-                        <span>{{ $msg->subject }}</span>
-                    </h5>
-                    @endif
-                    <p class="text-purple-900 leading-relaxed font-semibold">{{ $msg->message }}</p>
-                </div>
-
-                <!-- الرد الرسمي المسجل إن وجد -->
-                @if($msg->doctor_reply)
-                <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 space-y-2 mr-4 text-xs">
-                    <div class="flex items-center justify-between font-bold text-[11px]">
-                        <span class="text-emerald-950 flex items-center gap-1.5">
-                            <i class="fa-solid fa-reply"></i>
-                            @if($msg->recipient_type === 'specialist')
-                                <span>{{ $msg->replied_by }}:</span>
-                            @else
-                                <span>رد الإدارة المعتمد ({{ $msg->replied_by }}):</span>
+                <!-- واجهة الشات المصغرة داخل الكارت -->
+                <div class="flex-1 bg-slate-50/50 rounded-2xl p-4 border border-slate-100 space-y-4" style="background-image: url('data:image/svg+xml,%3Csvg width=\'10\' height=\'10\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.02\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E');">
+                    
+                    <!-- محتوى رسالة ولي الأمر (مستلمة) -->
+                    <div class="flex flex-col items-start max-w-[90%] self-start">
+                        <div class="bg-white p-3 rounded-2xl rounded-tr-none border border-slate-200 shadow-sm relative text-xs">
+                            @if($msg->subject)
+                            <h5 class="font-black text-[10px] text-slate-800 mb-1 border-b border-slate-100 pb-1">{{ $msg->subject }}</h5>
                             @endif
-                        </span>
-                        <span class="text-emerald-700 font-mono text-[10px]">{{ $msg->replied_at ? $msg->replied_at->diffForHumans() : '' }}</span>
+                            <p class="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">{{ $msg->message }}</p>
+                        </div>
                     </div>
-                    <p class="text-emerald-900 leading-relaxed font-semibold">{{ $msg->doctor_reply }}</p>
+
+                    <!-- الرد الرسمي المسجل إن وجد (مرسلة) -->
+                    @if($msg->doctor_reply)
+                    <div class="flex flex-col items-end max-w-[90%] self-end mt-2 ml-auto">
+                        <div class="flex items-end gap-2 mb-1 px-1 flex-row-reverse">
+                            @if($msg->recipient_type === 'specialist')
+                                <span class="text-[9px] font-bold text-teal-700">{{ $msg->replied_by }}</span>
+                            @else
+                                <span class="text-[9px] font-bold text-teal-700">الإدارة ({{ $msg->replied_by }})</span>
+                            @endif
+                            <span class="text-[8px] text-teal-600/70 font-mono">{{ $msg->replied_at ? $msg->replied_at->format('h:i A') : '' }}</span>
+                        </div>
+                        <div class="bg-teal-50 p-3 rounded-2xl rounded-tl-none border border-teal-100 shadow-sm text-xs">
+                            <p class="text-teal-900 leading-relaxed font-semibold whitespace-pre-wrap">{{ $msg->doctor_reply }}</p>
+                        </div>
+                    </div>
+                    @endif
                 </div>
-                @endif
 
                 <!-- نموذج الرد الفوري -->
-                <form action="{{ route('admin.parent-notes.reply', $msg) }}" method="POST" class="pt-2 space-y-2.5 border-t border-slate-100">
-                    @csrf
-                    
-                    <div class="flex items-center justify-between text-[11px] font-bold">
-                        <span class="text-slate-500"><i class="fa-solid fa-pen-nib ml-1 text-teal-600"></i> {{ $msg->doctor_reply ? 'تحديث الرد:' : 'كتابة الرد لولي الأمر:' }}</span>
-                        
-                        @if($msg->recipient_type === 'specialist')
-                            <input type="hidden" name="replied_by" value="الأخصائي {{ $msg->child->main_specialist ?? 'المعالج' }}">
-                        @else
-                            <select name="replied_by" class="p-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold">
-                                <option value="إدارة المركز العامة">إدارة المركز العامة</option>
-                                <option value="د. أحمد يسري (المشرف الطبي)">د. أحمد يسري (المشرف الطبي)</option>
-                                <option value="خدمة العملاء ورعاية الأهالي">خدمة العملاء ورعاية الأهالي</option>
-                            </select>
-                        @endif
-                    </div>
-
-                    <div class="flex gap-2">
-                        <textarea name="admin_reply" required rows="2" placeholder="اكتب ردك لولي الأمر ليظهر له فوراً في بوابته..." class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white text-xs font-medium leading-relaxed"></textarea>
-                        
-                        <button type="submit" class="px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-black text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0 self-end">
-                            <i class="fa-solid fa-paper-plane text-xs"></i>
-                            <span>{{ $msg->doctor_reply ? 'تحديث الرد' : 'إرسال الرد' }}</span>
+                <div x-data="{ showEdit: {{ $msg->doctor_reply ? 'false' : 'true' }} }" class="pt-2 border-t border-slate-100">
+                    @if($msg->doctor_reply)
+                    <div class="flex justify-end mb-2">
+                        <button type="button" @click="showEdit = !showEdit" class="text-[10px] text-slate-400 hover:text-teal-600 font-bold flex items-center gap-1 transition">
+                            <i class="fa-solid fa-pen-to-square"></i> تعديل الرد
                         </button>
                     </div>
-                </form>
+                    @endif
+                    
+                    <form x-show="showEdit" x-transition action="{{ route('admin.parent-notes.reply', $msg) }}" method="POST">
+                        @csrf
+                        
+                        <div class="flex items-center justify-between text-[11px] font-bold mb-2">
+                            <span class="text-slate-500"><i class="fa-solid fa-pen-nib ml-1 text-teal-600"></i> {{ $msg->doctor_reply ? 'تحديث الرد:' : 'كتابة الرد:' }}</span>
+                            
+                            @if($msg->recipient_type === 'specialist')
+                                <input type="hidden" name="replied_by" value="الأخصائي {{ $msg->child->main_specialist ?? 'المعالج' }}">
+                            @else
+                                <select name="replied_by" class="p-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold outline-none focus:bg-white">
+                                    <option value="إدارة المركز العامة">إدارة المركز العامة</option>
+                                    <option value="د. أحمد يسري (المشرف الطبي)">د. أحمد يسري (المشرف الطبي)</option>
+                                    <option value="خدمة العملاء ورعاية الأهالي">خدمة العملاء ورعاية الأهالي</option>
+                                </select>
+                            @endif
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <textarea name="admin_reply" required rows="1" placeholder="{{ $msg->doctor_reply ? 'قم بتعديل الرد هنا...' : 'اكتب ردك لولي الأمر ليظهر له فوراً...' }}" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white text-[11px] font-bold leading-relaxed resize-none min-h-[40px]">{{ $msg->doctor_reply }}</textarea>
+                            
+                            <button type="submit" class="px-4 py-2 rounded-xl text-white font-black text-[11px] shadow-sm transition hover:bg-teal-700 flex items-center justify-center gap-1.5 shrink-0 self-end" style="background-color: #0d9488;">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span class="hidden sm:inline">{{ $msg->doctor_reply ? 'تحديث' : 'إرسال' }}</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
                 <!-- أزرار الإجراءات السفلية -->
                 <div class="pt-2 flex items-center justify-between text-xs">

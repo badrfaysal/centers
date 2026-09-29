@@ -106,6 +106,12 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::post('/doctor-portal/reply-comment', [DoctorSessionController::class, 'replyComment'])->name('doctor.comment.reply');
     Route::post('/doctor-portal/reply-message', [DoctorSessionController::class, 'replyMessage'])->name('doctor.message.reply');
 
+    // Homeworks (Specialist)
+    Route::get('/doctor-portal/homeworks', [\App\Http\Controllers\HomeworkController::class, 'index'])->name('doctor.homeworks.index');
+    Route::post('/doctor-portal/homeworks', [\App\Http\Controllers\HomeworkController::class, 'store'])->name('doctor.homeworks.store');
+    Route::get('/doctor-portal/homeworks/{homework}', [\App\Http\Controllers\HomeworkController::class, 'show'])->name('doctor.homeworks.show');
+    Route::post('/doctor-portal/homeworks/{homework}/reply', [\App\Http\Controllers\HomeworkController::class, 'reply'])->name('doctor.homeworks.reply');
+
     // 8. شاشة وملاحظات وشكاوى أولياء الأمور لإدارة المركز
     Route::get('/admin/parent-notes', [AdminParentNoteController::class, 'index'])->name('admin.parent-notes.index');
     Route::post('/admin/parent-notes/{message}/reply', [AdminParentNoteController::class, 'reply'])->name('admin.parent-notes.reply');
@@ -121,6 +127,11 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::post('/parent-portal/rating', [ParentPortalController::class, 'storeRating'])->name('parent.rating.store');
     Route::post('/parent-portal/apologize/{sessionSchedule}', [ParentPortalController::class, 'apologizeSession'])->name('parent.session.apologize');
 
+    // Homeworks (Parent)
+    Route::get('/parent-portal/{code}/homeworks', [\App\Http\Controllers\ParentHomeworkController::class, 'index'])->name('parent.homeworks.index');
+    Route::get('/parent-portal/{code}/homeworks/{homework}', [\App\Http\Controllers\ParentHomeworkController::class, 'show'])->name('parent.homeworks.show');
+    Route::post('/parent-portal/{code}/homeworks/{homework}/reply', [\App\Http\Controllers\ParentHomeworkController::class, 'reply'])->name('parent.homeworks.reply');
+
     // 10. إعدادات وهويّة المركز
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
@@ -134,6 +145,7 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::get('/finances/{invoice}/print', [\App\Http\Controllers\FinanceController::class, 'print'])->name('invoices.print');
     Route::get('/api/specialist-price/{specialist}', [FinanceController::class, 'getSpecialistPrice'])->name('api.specialist.price');
     Route::get('/api/urgent-notifications', [\App\Http\Controllers\DashboardController::class, 'getUrgentNotifications'])->name('api.urgent-notifications');
+    Route::post('/api/specialist-ready', [\App\Http\Controllers\DashboardController::class, 'markSpecialistReady'])->name('api.specialist-ready');
     Route::get('/api/new-bookings', [\App\Http\Controllers\BookingController::class, 'checkNewBookings'])->name('api.new-bookings');
 
     // 12. Users Management (Admins only)

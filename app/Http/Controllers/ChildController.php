@@ -98,11 +98,11 @@ class ChildController extends Controller
 
         $child = Child::create($validated);
 
-        return redirect()->route('children.index')->with('success', 'تم إضافة الطفل بنجاح. يمكن لولي الأمر الآن إنشاء حسابه من البوابة.');
+        return redirect()->route('children.index')->with('success', 'ØªÙ… Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø·ÙÙ„ Ø¨Ù†Ø¬Ø§Ø­. ÙŠÙ…ÙƒÙ† Ù„ÙˆÙ„ÙŠ Ø§Ù„Ø£Ù…Ø± Ø§Ù„Ø¢Ù† Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨Ù‡ Ù…Ù† Ø§Ù„Ø¨ÙˆØ§Ø¨Ø©.');
     }
 
     /**
-     * Display the 360° profile of the specified child.
+     * Display the 360Â° profile of the specified child.
      */
     public function show(Child $child)
     {
@@ -112,8 +112,8 @@ class ChildController extends Controller
         if ($dbSessions->isNotEmpty()) {
             foreach ($dbSessions as $s) {
                 $recentSessions[] = [
-                    'date' => $s->session_date ? $s->session_date->format('Y-m-d') : 'اليوم',
-                    'time' => $s->session_time ?? '04:00 م',
+                    'date' => $s->session_date ? $s->session_date->format('Y-m-d') : 'Ø§Ù„ÙŠÙˆÙ…',
+                    'time' => $s->session_time ?? '04:00 Ù…',
                     'room' => $s->room_name,
                     'specialist' => $s->specialist_name,
                     'mood' => $s->child_mood,
@@ -122,12 +122,13 @@ class ChildController extends Controller
                     'home_exercise' => $s->home_exercise,
                     'has_video' => !empty($s->video_path),
                     'video_path' => is_array($s->video_path) 
-                        ? (count($s->video_path) > 0 ? asset('storage/' . $s->video_path[0]) : null) 
-                        : ($s->video_path ? asset('storage/' . $s->video_path) : null),
+                        ? (count($s->video_path) > 0 ? (str_starts_with($s->video_path[0], "http") ? $s->video_path[0] : asset("storage/" . $s->video_path[0])) : null) 
+                        : ($s->video_path ? (str_starts_with($s->video_path, "http") ? $s->video_path : asset("storage/" . $s->video_path)) : null),
                     'all_videos' => is_array($s->video_path) 
-                        ? array_map(function($p) { return asset('storage/' . $p); }, $s->video_path)
-                        : ($s->video_path ? [asset('storage/' . $s->video_path)] : []),
-                    'video_duration' => $s->video_duration ?? '0:30 دقيقة',
+                        ? array_map(function($p) { return str_starts_with($p, "http") ? $p : asset("storage/" . $p); }, $s->video_path)
+                        : ($s->video_path ? [(str_starts_with($s->video_path, "http") ? $s->video_path : asset("storage/" . $s->video_path))] : []),
+
+                    'video_duration' => $s->video_duration ?? '0:30 Ø¯Ù‚ÙŠÙ‚Ø©',
                     'goals' => $s->goals_evaluated ?? [],
                 ];
             }
@@ -141,8 +142,8 @@ class ChildController extends Controller
                     $pct = (int) ($goal['percentage'] ?? 0);
                     $iepGoals[] = [
                         'id' => $i + 1,
-                        'title' => $goal['text'] ?? 'هدف علاجي',
-                        'category' => 'مهارة مستهدفة',
+                        'title' => $goal['text'] ?? 'Ù‡Ø¯Ù Ø¹Ù„Ø§Ø¬ÙŠ',
+                        'category' => 'Ù…Ù‡Ø§Ø±Ø© Ù…Ø³ØªÙ‡Ø¯ÙØ©',
                         'progress' => $pct,
                         'status' => $pct >= 100 ? 'achieved' : 'in_progress',
                         'target_date' => $latestSession->session_date ? \Carbon\Carbon::parse($latestSession->session_date)->addMonth()->format('Y-m-d') : date('Y-m-d'),
@@ -152,7 +153,7 @@ class ChildController extends Controller
                     $iepGoals[] = [
                         'id' => $i + 1,
                         'title' => $goal,
-                        'category' => 'مهارة مستهدفة',
+                        'category' => 'Ù…Ù‡Ø§Ø±Ø© Ù…Ø³ØªÙ‡Ø¯ÙØ©',
                         'progress' => 0,
                         'status' => 'in_progress',
                         'target_date' => date('Y-m-d'),
@@ -165,7 +166,7 @@ class ChildController extends Controller
         $parentNotes = [];
 
         $packageInfo = [
-            'name' => 'باقة الجلسات',
+            'name' => 'Ø¨Ø§Ù‚Ø© Ø§Ù„Ø¬Ù„Ø³Ø§Øª',
             'total_sessions' => 0,
             'completed_sessions' => 0,
             'remaining_sessions' => 0,
@@ -186,8 +187,8 @@ class ChildController extends Controller
         if ($dbSessions->isNotEmpty()) {
             foreach ($dbSessions as $s) {
                 $recentSessions[] = [
-                    'date' => $s->session_date ? $s->session_date->format('Y-m-d') : 'اليوم',
-                    'time' => $s->session_time ?? '04:00 م',
+                    'date' => $s->session_date ? $s->session_date->format('Y-m-d') : 'Ø§Ù„ÙŠÙˆÙ…',
+                    'time' => $s->session_time ?? '04:00 Ù…',
                     'room' => $s->room_name,
                     'specialist' => $s->specialist_name,
                     'mood' => $s->child_mood,
@@ -206,8 +207,8 @@ class ChildController extends Controller
                     $pct = (int) ($goal['percentage'] ?? 0);
                     $iepGoals[] = [
                         'id' => $i + 1,
-                        'title' => $goal['text'] ?? 'هدف علاجي',
-                        'category' => 'مهارة مستهدفة',
+                        'title' => $goal['text'] ?? 'Ù‡Ø¯Ù Ø¹Ù„Ø§Ø¬ÙŠ',
+                        'category' => 'Ù…Ù‡Ø§Ø±Ø© Ù…Ø³ØªÙ‡Ø¯ÙØ©',
                         'progress' => $pct,
                         'status' => $pct >= 100 ? 'achieved' : 'in_progress',
                         'target_date' => $latestSession->session_date ? \Carbon\Carbon::parse($latestSession->session_date)->addMonth()->format('Y-m-d') : date('Y-m-d'),
@@ -217,7 +218,7 @@ class ChildController extends Controller
                     $iepGoals[] = [
                         'id' => $i + 1,
                         'title' => $goal,
-                        'category' => 'مهارة مستهدفة',
+                        'category' => 'Ù…Ù‡Ø§Ø±Ø© Ù…Ø³ØªÙ‡Ø¯ÙØ©',
                         'progress' => 0,
                         'status' => 'in_progress',
                         'target_date' => date('Y-m-d'),
@@ -295,17 +296,17 @@ class ChildController extends Controller
 
         $child->update($validated);
 
-        return redirect()->route('children.index')->with('success', "تم تحديث وحفظ بيانات ملف الطفل ({$child->name}) بنجاح!");
+        return redirect()->route('children.index')->with('success', "ØªÙ… ØªØ­Ø¯ÙŠØ« ÙˆØ­ÙØ¸ Ø¨ÙŠØ§Ù†Ø§Øª Ù…Ù„Ù Ø§Ù„Ø·ÙÙ„ ({$child->name}) Ø¨Ù†Ø¬Ø§Ø­!");
     }
 
     private function getSpecialistsList(): array
     {
         $db = Specialist::where('status', 'active')->orderBy('name')->pluck('name')->toArray();
         return !empty($db) ? $db : [
-            'د. أحمد يسري (أخصائي تخاطب ونطق)',
-            'د. مروة كمال (تكامل حسي وتعديل سلوك)',
-            'د. سارة إبراهيم (تأهيل تخاطب سمعي)',
-            'أ. حسام فؤاد (صعوبات تعلم وتنمية مهارات)',
+            'Ø¯. Ø£Ø­Ù…Ø¯ ÙŠØ³Ø±ÙŠ (Ø£Ø®ØµØ§Ø¦ÙŠ ØªØ®Ø§Ø·Ø¨ ÙˆÙ†Ø·Ù‚)',
+            'Ø¯. Ù…Ø±ÙˆØ© ÙƒÙ…Ø§Ù„ (ØªÙƒØ§Ù…Ù„ Ø­Ø³ÙŠ ÙˆØªØ¹Ø¯ÙŠÙ„ Ø³Ù„ÙˆÙƒ)',
+            'Ø¯. Ø³Ø§Ø±Ø© Ø¥Ø¨Ø±Ø§Ù‡ÙŠÙ… (ØªØ£Ù‡ÙŠÙ„ ØªØ®Ø§Ø·Ø¨ Ø³Ù…Ø¹ÙŠ)',
+            'Ø£. Ø­Ø³Ø§Ù… ÙØ¤Ø§Ø¯ (ØµØ¹ÙˆØ¨Ø§Øª ØªØ¹Ù„Ù… ÙˆØªÙ†Ù…ÙŠØ© Ù…Ù‡Ø§Ø±Ø§Øª)',
         ];
     }
 
@@ -317,11 +318,11 @@ class ChildController extends Controller
     private function getPackagesList(): array
     {
         return [
-            'evaluation' => 'جلسة تقييم واختبارات أولية',
-            'package_8' => 'باقة أساسية (8 جلسات شهرياً)',
-            'package_12' => 'باقة مكثفة (12 جلسة شهرياً)',
-            'package_24' => 'باقة تأهيل شامل مدمجة (24 جلسة)',
-            'pay_per_session' => 'محاسبة بالجلسة المفردة',
+            'evaluation' => 'Ø¬Ù„Ø³Ø© ØªÙ‚ÙŠÙŠÙ… ÙˆØ§Ø®ØªØ¨Ø§Ø±Ø§Øª Ø£ÙˆÙ„ÙŠØ©',
+            'package_8' => 'Ø¨Ø§Ù‚Ø© Ø£Ø³Ø§Ø³ÙŠØ© (8 Ø¬Ù„Ø³Ø§Øª Ø´Ù‡Ø±ÙŠØ§Ù‹)',
+            'package_12' => 'Ø¨Ø§Ù‚Ø© Ù…ÙƒØ«ÙØ© (12 Ø¬Ù„Ø³Ø© Ø´Ù‡Ø±ÙŠØ§Ù‹)',
+            'package_24' => 'Ø¨Ø§Ù‚Ø© ØªØ£Ù‡ÙŠÙ„ Ø´Ø§Ù…Ù„ Ù…Ø¯Ù…Ø¬Ø© (24 Ø¬Ù„Ø³Ø©)',
+            'pay_per_session' => 'Ù…Ø­Ø§Ø³Ø¨Ø© Ø¨Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ù…ÙØ±Ø¯Ø©',
         ];
     }
 
@@ -339,7 +340,7 @@ class ChildController extends Controller
             $child->update(['medications_file' => $path]);
         }
 
-        return redirect()->back()->with('success', 'تم رفع ملف الأدوية بنجاح.');
+        return redirect()->back()->with('success', 'ØªÙ… Ø±ÙØ¹ Ù…Ù„Ù Ø§Ù„Ø£Ø¯ÙˆÙŠØ© Ø¨Ù†Ø¬Ø§Ø­.');
     }
 
     public function storeTest(Request $request, Child $child)
@@ -358,7 +359,7 @@ class ChildController extends Controller
 
         $child->tests()->create($validated);
 
-        return redirect()->back()->with('success', 'تم إضافة الاختبار بنجاح.');
+        return redirect()->back()->with('success', 'ØªÙ… Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø± Ø¨Ù†Ø¬Ø§Ø­.');
     }
 
     public function destroyTest(\App\Models\ChildTest $test)
@@ -368,6 +369,7 @@ class ChildController extends Controller
         }
         $test->delete();
 
-        return redirect()->back()->with('success', 'تم حذف الاختبار بنجاح.');
+        return redirect()->back()->with('success', 'ØªÙ… Ø­Ø°Ù Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø± Ø¨Ù†Ø¬Ø§Ø­.');
     }
 }
+

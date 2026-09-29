@@ -22,18 +22,18 @@ class ParentPortalController extends Controller
         $user = \Illuminate\Support\Facades\Auth::user();
 
         if ($user && $user->role === 'parent') {
-            $child = Child::where('user_id', $user->id)->with(['therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
+            $child = Child::where('user_id', $user->id)->with(['homeworks', 'therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
             if (!$child && $user->username) {
-                 $child = Child::where('national_id', $user->username)->with(['therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
+                 $child = Child::where('national_id', $user->username)->with(['homeworks', 'therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
             }
         } elseif ($code) {
-            $child = Child::where('code', $code)->with(['therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
+            $child = Child::where('code', $code)->with(['homeworks', 'therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
         } elseif ($request->filled('child_code')) {
-            $child = Child::where('code', $request->child_code)->with(['therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
+            $child = Child::where('code', $request->child_code)->with(['homeworks', 'therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
         } elseif ($request->filled('child_id')) {
-            $child = Child::where('id', $request->child_id)->with(['therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
+            $child = Child::where('id', $request->child_id)->with(['homeworks', 'therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
         } else {
-            $child = Child::with(['therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
+            $child = Child::with(['homeworks', 'therapySessions.comments', 'parentMessages', 'specialistRatings', 'sessionSchedules'])->first();
         }
 
         $children = Child::select('id', 'name', 'code', 'photo_path', 'phone')->get();

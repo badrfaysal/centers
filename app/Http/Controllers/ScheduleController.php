@@ -90,7 +90,11 @@ class ScheduleController extends Controller
     {
         $specialists = Specialist::where('status', 'active')->orderBy('name')->get();
         
-        $selectedSpecialistName = $request->input('specialist') ?? ($specialists->first()->name ?? 'د. أحمد يسري');
+        if (auth()->user()->role === 'specialist') {
+            $selectedSpecialistName = auth()->user()->name;
+        } else {
+            $selectedSpecialistName = $request->input('specialist') ?? ($specialists->first()->name ?? 'د. أحمد يسري');
+        }
 
         $todaySessions = SessionSchedule::with('child')
             ->where('specialist_name', $selectedSpecialistName)

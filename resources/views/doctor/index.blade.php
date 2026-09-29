@@ -361,53 +361,66 @@
                     </button>
                 </div>
 
-                <!-- الرسائل المتمددة -->
+                <!-- الرسائل المتمددة (واجهة الشات) -->
                 <div x-show="expandedMsg" x-collapse>
-                    <div class="p-4 sm:p-5 bg-slate-50/50 border-t border-slate-100 space-y-4">
-                        @foreach($messages as $pmsg)
-                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-50 text-[10px]">
-                                <span class="font-mono text-slate-400">
-                                    موجه إلى: <strong class="text-slate-700">{{ $pmsg->recipient_type === 'specialist' ? 'الأخصائي المعالج' : 'إدارة المركز' }}</strong>
-                                </span>
-                                <span class="text-slate-500 font-bold">{{ $pmsg->created_at ? $pmsg->created_at->diffForHumans() : '' }}</span>
+                    <div class="p-4 sm:p-5 bg-slate-50/80 border-t border-slate-100 flex flex-col space-y-6 max-h-[600px] overflow-y-auto" style="background-image: url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.03\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E');">
+                        @foreach($messages->sortBy('created_at') as $pmsg)
+                        
+                        <!-- رسالة ولي الأمر (مستلمة) -->
+                        <div class="flex flex-col items-start max-w-[85%] sm:max-w-[75%] self-start">
+                            <div class="flex items-end gap-2 mb-1 px-1">
+                                <span class="text-[10px] font-bold text-slate-500">ولي الأمر</span>
+                                <span class="text-[9px] text-slate-400 font-mono">{{ $pmsg->created_at ? $pmsg->created_at->format('h:i A') : '' }}</span>
                             </div>
-
-                            <div class="p-4 rounded-2xl bg-purple-50/70 border border-purple-100 space-y-1.5">
+                            <div class="bg-white p-3 sm:p-4 rounded-2xl rounded-tr-none border border-slate-200 shadow-sm relative">
                                 @if($pmsg->subject)
-                                <h5 class="font-black text-xs text-purple-950">{{ $pmsg->subject }}</h5>
+                                <h5 class="font-black text-[11px] text-slate-800 mb-1 border-b border-slate-100 pb-1">{{ $pmsg->subject }}</h5>
                                 @endif
-                                <p class="text-xs text-purple-900 leading-relaxed font-medium">{{ $pmsg->message }}</p>
+                                <p class="text-xs text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">{{ $pmsg->message }}</p>
                             </div>
+                        </div>
 
+                        <!-- رد الأخصائي (مرسلة) -->
+                        @if($pmsg->doctor_reply)
+                        <div class="flex flex-col items-end max-w-[85%] sm:max-w-[75%] self-end mt-2">
+                            <div class="flex items-end gap-2 mb-1 px-1 flex-row-reverse">
+                                <span class="text-[10px] font-bold text-teal-700">الأخصائي ({{ $pmsg->replied_by }})</span>
+                                <span class="text-[9px] text-teal-600/70 font-mono">{{ $pmsg->replied_at ? $pmsg->replied_at->format('h:i A') : '' }}</span>
+                            </div>
+                            <div class="bg-teal-50 p-3 sm:p-4 rounded-2xl rounded-tl-none border border-teal-100 shadow-sm">
+                                <p class="text-xs text-teal-900 leading-relaxed font-semibold whitespace-pre-wrap">{{ $pmsg->doctor_reply }}</p>
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- مربع الرد -->
+                        <div class="flex flex-col items-end w-full self-end mt-1 mb-2" x-data="{ showEdit: {{ $pmsg->doctor_reply ? 'false' : 'true' }} }">
                             @if($pmsg->doctor_reply)
-                            <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-100 space-y-2 mr-6 text-xs">
-                                <div class="flex items-center justify-between font-bold text-[11px]">
-                                    <span class="text-emerald-950 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-reply"></i>
-                                        <span>رد الأخصائي ({{ $pmsg->replied_by }}):</span>
-                                    </span>
-                                    <span class="text-emerald-700 font-mono">{{ $pmsg->replied_at ? $pmsg->replied_at->diffForHumans() : '' }}</span>
-                                </div>
-                                <p class="text-emerald-900 leading-relaxed font-semibold">{{ $pmsg->doctor_reply }}</p>
-                            </div>
+                            <button type="button" @click="showEdit = !showEdit" class="text-[10px] text-slate-400 hover:text-teal-600 font-bold mb-2 flex items-center gap-1 transition">
+                                <i class="fa-solid fa-pen-to-square"></i> تعديل الرد
+                            </button>
                             @endif
-
-                            <!-- فورم الرد -->
-                            <form action="{{ route('doctor.message.reply') }}" method="POST" class="pt-2 space-y-2 mr-6">
+                            
+                            <form x-show="showEdit" x-transition action="{{ route('doctor.message.reply') }}" method="POST" class="w-full sm:w-[85%] bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-2">
                                 @csrf
                                 <input type="hidden" name="message_id" value="{{ $pmsg->id }}">
-                                <input type="hidden" name="doctor_name" value="{{ $pmsg->child ? ($pmsg->child->main_specialist ?? 'أ. معالج نفسي') : 'أ. معالج نفسي' }}">
-
-                                <div class="flex flex-col sm:flex-row gap-2">
-                                    <textarea name="doctor_reply" required rows="2" placeholder="{{ $pmsg->doctor_reply ? 'تعديل الرد أو إضافة تفاصيل أخرى للرد السابق...' : 'اكتب ردك وتوجيهك الطبي لولي الأمر هنا...' }}" class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white text-xs font-medium leading-relaxed"></textarea>
-                                    <button type="submit" class="px-5 py-2.5 rounded-2xl text-white font-bold text-xs shadow-md transition hover:opacity-90 flex items-center justify-center gap-1.5 shrink-0 self-end" style="background-color: #0d9488;">
-                                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                                        <span>{{ $pmsg->doctor_reply ? 'تعديل الرد' : 'إرسال الرد للأهل' }}</span>
-                                    </button>
-                                </div>
+                                <input type="hidden" name="replied_by" value="{{ $pmsg->child ? ($pmsg->child->main_specialist ?? 'أ. معالج نفسي') : 'أ. معالج نفسي' }}">
+                                
+                                <textarea name="doctor_reply" required rows="1" placeholder="{{ $pmsg->doctor_reply ? 'تعديل الرد...' : 'اكتب ردك لولي الأمر هنا...' }}" class="flex-1 p-2 sm:p-3 bg-transparent border-0 outline-none focus:ring-0 text-xs font-medium resize-none min-h-[40px]">{{ $pmsg->doctor_reply }}</textarea>
+                                
+                                <button type="submit" class="w-10 h-10 sm:w-auto sm:h-auto sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-white font-bold text-xs shadow-md transition hover:opacity-90 flex items-center justify-center shrink-0 self-end" style="background-color: #0d9488;">
+                                    <i class="fa-solid fa-paper-plane text-xs sm:ml-1.5"></i>
+                                    <span class="hidden sm:inline">{{ $pmsg->doctor_reply ? 'تحديث' : 'إرسال' }}</span>
+                                </button>
                             </form>
                         </div>
+                        
+                        @if(!$loop->last)
+                        <div class="w-full flex justify-center my-2 opacity-50">
+                            <span class="bg-slate-200 text-slate-400 text-[9px] px-3 py-0.5 rounded-full font-bold">رسالة أخرى</span>
+                        </div>
+                        @endif
+
                         @endforeach
                     </div>
                 </div>

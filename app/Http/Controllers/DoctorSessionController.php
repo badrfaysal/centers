@@ -24,7 +24,7 @@ class DoctorSessionController extends Controller
             $specialistFilter = auth()->user()->name;
         }
 
-        // 1. سجل الجلسات السابقة مجمع بالطفل
+        // 1. Ø³Ø¬Ù„ Ø§Ù„Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø© Ù…Ø¬Ù…Ø¹ Ø¨Ø§Ù„Ø·ÙÙ„
         $childrenQuery = \App\Models\Child::whereHas('therapySessions', function ($q) use ($specialistFilter) {
             if ($specialistFilter && $specialistFilter !== 'all') {
                 $q->where('specialist_name', $specialistFilter);
@@ -46,10 +46,10 @@ class DoctorSessionController extends Controller
         }
         $groupedChildren = $childrenQuery->paginate(10);
 
-        // 2. تعليقات أولياء الأمور على الفيديوهات
+        // 2. ØªØ¹Ù„ÙŠÙ‚Ø§Øª Ø£ÙˆÙ„ÙŠØ§Ø¡ Ø§Ù„Ø£Ù…ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª
         $videoComments = VideoComment::with(['session', 'child'])->latest()->get();
 
-        // 3. رسائل واستفسارات أولياء الأمور الموجهة للأخصائي
+        // 3. Ø±Ø³Ø§Ø¦Ù„ ÙˆØ§Ø³ØªÙØ³Ø§Ø±Ø§Øª Ø£ÙˆÙ„ÙŠØ§Ø¡ Ø§Ù„Ø£Ù…ÙˆØ± Ø§Ù„Ù…ÙˆØ¬Ù‡Ø© Ù„Ù„Ø£Ø®ØµØ§Ø¦ÙŠ
         $parentMessages = ParentMessage::with('child')
             ->where('recipient_type', 'specialist')
             ->latest()
@@ -135,14 +135,20 @@ class DoctorSessionController extends Controller
         }
         $validated['goals_evaluated'] = $goalsEvaluated;
 
-        if ($request->hasFile('video')) {
+        if ($request->filled('youtube_link')) {
+            $ytLink = $request->input('youtube_link');
+            if (str_contains($ytLink, 'youtube.com') || str_contains($ytLink, 'youtu.be')) {
+                $validated['video_path'] = [$ytLink];
+                $validated['video_duration'] = 'يوتيوب';
+            }
+        } elseif ($request->hasFile('video')) {
             $paths = [];
             foreach ($request->file('video') as $file) {
                 $paths[] = $file->store('session_videos', 'public');
             }
             $validated['video_path'] = $paths;
+} 
             $validated['video_duration'] = '0:45 دقيقة';
-        }
 
         if ($request->hasFile('homework_file')) {
             $paths = [];
@@ -161,7 +167,19 @@ class DoctorSessionController extends Controller
         $session = TherapySession::create($validated);
         $child = Child::findOrFail($validated['child_id']);
 
-        // تحديث حالة الحضور في الكالندر تلقائياً عند تسجيل الجلسة
+        if (!empty($validated['home_exercise'])) {
+            $specialist_id = auth()->check() && auth()->user()->role === 'specialist' ? auth()->id() : null;
+            \App\Models\Homework::create([
+                'child_id' => $validated['child_id'],
+                'specialist_id' => $specialist_id,
+                'therapy_session_id' => $session->id,
+                'title' => 'واجب منزلي: ' . ($validated['session_type'] ?? 'تخاطب'),
+                'description' => $validated['home_exercise'],
+                'status' => 'pending'
+            ]);
+        }
+
+        // ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø­Ø¶ÙˆØ± ÙÙŠ Ø§Ù„ÙƒØ§Ù„Ù†Ø¯Ø± ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¹Ù†Ø¯ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¬Ù„Ø³Ø©
         $schedule = \App\Models\SessionSchedule::where('child_id', $child->id)
             ->whereDate('session_date', $validated['session_date'])
             ->where('status', '!=', 'cancelled')
@@ -192,16 +210,16 @@ class DoctorSessionController extends Controller
             'timestamp' => time()
         ], 120);
 
-        // إذا تم تفعيل إرسال ملخص الجلسة عبر الواتساب، نعيد التوجيه مع رابط الواتساب
+        // Ø¥Ø°Ø§ ØªÙ… ØªÙØ¹ÙŠÙ„ Ø¥Ø±Ø³Ø§Ù„ Ù…Ù„Ø®Øµ Ø§Ù„Ø¬Ù„Ø³Ø© Ø¹Ø¨Ø± Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ØŒ Ù†Ø¹ÙŠØ¯ Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ Ù…Ø¹ Ø±Ø§Ø¨Ø· Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨
         if ($session->whatsapp_notified) {
             $waUrl = $session->whatsapp_session_summary_url;
             return redirect()->route('children.show', $child)
-                ->with('success', "تم تسجيل بيانات الجلسة للطفل ({$child->name}) بنجاح! ✅")
+                ->with('success', "ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¬Ù„Ø³Ø© Ù„Ù„Ø·ÙÙ„ ({$child->name}) بنجاح! ✅")
                 ->with('whatsapp_url', $waUrl);
         }
 
         return redirect()->route('children.show', $child)
-            ->with('success', "تم تسجيل بيانات الجلسة والملاحظات للطفل ({$child->name}) وحفظها في بروفايله بنجاح! ");
+            ->with('success', "ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¬Ù„Ø³Ø© ÙˆØ§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ù„Ù„Ø·ÙÙ„ ({$child->name}) ÙˆØ­ÙØ¸Ù‡Ø§ ÙÙŠ Ø¨Ø±ÙˆÙØ§ÙŠÙ„Ù‡ Ø¨Ù†Ø¬Ø§Ø­! ");
     }
 
     /**
@@ -220,7 +238,7 @@ class DoctorSessionController extends Controller
         VideoComment::create($validated);
 
         return redirect()->route('doctor.portal')
-            ->with('success', 'تم إرسال ردك على تعليق ولي الأمر بنجاح وسيظهر له في تطبيقه فوراً! ');
+            ->with('success', 'ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø¯Ùƒ Ø¹Ù„Ù‰ ØªØ¹Ù„ÙŠÙ‚ ÙˆÙ„ÙŠ Ø§Ù„Ø£Ù…Ø± Ø¨Ù†Ø¬Ø§Ø­ ÙˆØ³ÙŠØ¸Ù‡Ø± Ù„Ù‡ ÙÙŠ ØªØ·Ø¨ÙŠÙ‚Ù‡ ÙÙˆØ±Ø§Ù‹! ');
     }
 
     /**
@@ -242,7 +260,7 @@ class DoctorSessionController extends Controller
         ]);
 
         return redirect()->route('doctor.portal')
-            ->with('success', 'تم إرسال الرد على رسالة واستفسار ولي الأمر بنجاح! ');
+            ->with('success', 'ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø¯ Ø¹Ù„Ù‰ Ø±Ø³Ø§Ù„Ø© ÙˆØ§Ø³ØªÙØ³Ø§Ø± ÙˆÙ„ÙŠ Ø§Ù„Ø£Ù…Ø± Ø¨Ù†Ø¬Ø§Ø­! ');
     }
 
     private function getSpecialistsList(): array
@@ -267,7 +285,7 @@ class DoctorSessionController extends Controller
             'is_homework_completed' => true
         ]);
 
-        // إشعار للإدارة أو الأخصائي يمكن إضافته هنا مستقبلاً
+        // Ø¥Ø´Ø¹Ø§Ø± Ù„Ù„Ø¥Ø¯Ø§Ø±Ø© Ø£Ùˆ Ø§Ù„Ø£Ø®ØµØ§Ø¦ÙŠ ÙŠÙ…ÙƒÙ† Ø¥Ø¶Ø§ÙØªÙ‡ Ù‡Ù†Ø§ Ù…Ø³ØªÙ‚Ø¨Ù„Ø§Ù‹
         
         return redirect()->back()->with('success', 'تم تسجيل إنجاز التدريب المنزلي بنجاح. شكراً لتعاونكم!');
     }

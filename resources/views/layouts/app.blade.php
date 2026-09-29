@@ -273,12 +273,7 @@
                         <p class="px-3 text-[10px] font-extrabold uppercase tracking-wider mb-2" style="color: color-mix(in srgb, var(--brand-primary-hex) 55%, #64748b);">القائمة الرئيسية</p>
                         <nav class="space-y-1.5 text-sm font-semibold">
                             
-                            <!-- شاشة الانتظار للمركز -->
-                            <a href="{{ route('center.screen') }}" target="_blank" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10 mb-2">
-                                <i class="fa-solid fa-tv w-5 text-center text-base text-indigo-400"></i>
-                                <span>شاشة المركز (الانتظار)</span>
-                                <i class="fa-solid fa-arrow-up-right-from-square mr-auto text-[11px] text-slate-400"></i>
-                            </a>
+                            
 
                             <!-- الموقع الإلكتروني العام -->
                             @if(!Auth::check() || in_array(Auth::user()->role, ['admin', 'user']))
@@ -334,9 +329,25 @@
                                 <i class="fa-solid fa-star w-5 text-center text-base {{ request('tab') === 'rating' ? 'text-white' : 'text-amber-400' }}"></i>
                                 <span>تقييم الجلسات</span>
                             </a>
-                            <a href="{{ route('parent.portal') }}?tab=reports" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request('tab') === 'reports' ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                                <i class="fa-solid fa-dumbbell w-5 text-center text-base {{ request('tab') === 'reports' ? 'text-white' : 'text-emerald-400' }}"></i>
+                                                        @php
+                                $parentNewHomeworksCount = 0;
+                                if(isset($parentChild)) {
+                                    $parentNewHomeworksCount = \App\Models\Homework::where('child_id', $parentChild->id)
+                                        ->where(function($query) {
+                                            $query->whereHas('messages', function($q) {
+                                                $q->where('sender_type', 'specialist')->whereNull('read_at');
+                                            })->orWhere(function($q) {
+                                                $q->doesntHave('messages')->where('status', 'pending');
+                                            });
+                                        })->count();
+                                }
+                            @endphp
+                            <a href="{{ isset($parentChild) ? route('parent.homeworks.index', $parentChild->code) : '#' }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('parent.homeworks.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                                <i class="fa-solid fa-microphone-lines w-5 text-center text-base {{ request()->routeIs('parent.homeworks.*') ? 'text-white' : 'text-emerald-400' }}"></i>
                                 <span>التمارين المنزلية</span>
+                                @if(isset($parentNewHomeworksCount) && $parentNewHomeworksCount > 0)
+                                    <span class="mr-auto px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse shadow-md">{{ $parentNewHomeworksCount }}</span>
+                                @endif
                             </a>
                             <a href="{{ route('parent.portal') }}?tab=media" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request('tab') === 'media' ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                                 <i class="fa-solid fa-photo-film w-5 text-center text-base {{ request('tab') === 'media' ? 'text-white' : 'text-purple-400' }}"></i>
@@ -359,11 +370,31 @@
                                 <i class="fa-solid fa-child-reaching w-5 text-center text-base {{ request()->routeIs('children.*') ? 'text-white' : 'text-emerald-400' }}"></i>
                                 <span>ملفات الأطفال</span>
                             </a>
-                            <!-- مكتبة الملفات والفيديوهات -->
-                            <a href="{{ route('media.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('media.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                                <i class="fa-solid fa-photo-film w-5 text-center text-base {{ request()->routeIs('media.*') ? 'text-white' : 'text-purple-400' }}"></i>
-                                <span>الملفات والفيديوهات</span>
+
+                            @php
+                                $specialistNewHomeworksCount = \App\Models\Homework::where('specialist_id', Auth::id())
+                                    ->whereHas('messages', function($q) {
+                                        $q->where('sender_type', 'parent')->whereNull('read_at');
+                                    })->count();
+                            @endphp
+                            <!-- التمارين المنزلية -->
+                            <a href="{{ route('doctor.homeworks.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('doctor.homeworks.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                                <i class="fa-solid fa-microphone-lines w-5 text-center text-base {{ request()->routeIs('doctor.homeworks.*') ? 'text-white' : 'text-emerald-400' }}"></i>
+                                <span>التمارين المنزلية</span>
+                                @if($specialistNewHomeworksCount > 0)
+                                    <span class="mr-auto px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse shadow-md">{{ $specialistNewHomeworksCount }}</span>
+                                @endif
                             </a>
+
+                            <!-- زر أنا جاهز لدخول الطفل التالي -->
+                            <button type="button" onclick="window.notifyAdminReady()" class="mt-4 flex w-full items-center gap-3.5 px-3.5 py-3 rounded-2xl transition bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 group">
+                                <div class="relative flex items-center justify-center">
+                                    <span class="absolute w-full h-full rounded-full bg-emerald-500 opacity-20 group-hover:animate-ping"></span>
+                                    <i class="fa-solid fa-bell-concierge w-5 text-center text-base"></i>
+                                </div>
+                                <span class="font-extrabold text-xs">أنا جاهز (إبلاغ الإدارة)</span>
+                            </button>
+                            
                         @elseif(Auth::check() && in_array(Auth::user()->role, ['admin', 'user']))
                             <!-- لوحة التحكم -->
                             <a href="{{ route('dashboard') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('dashboard') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -371,17 +402,12 @@
                                 <span>لوحة التحكم</span>
                             </a>
 
-                            <!-- شاشة الـ QR للحضور السريع -->
-                            <a href="{{ route('attendance.screen') }}" target="_blank" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition bg-purple-50/10 text-purple-200 hover:bg-purple-500/20 hover:text-white border border-purple-500/30">
-                                <i class="fa-solid fa-qrcode w-5 text-center text-base text-purple-400"></i>
-                                <span>شاشة الحضور (QR)</span>
-                            </a>
+                            
 
-                            <!-- شاشة النداء الصوتي للمركز -->
-                            <a href="{{ route('center.screen') }}" target="_blank" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition bg-blue-50/10 text-blue-200 hover:bg-blue-500/20 hover:text-white border border-blue-500/30 mt-2">
-                                <i class="fa-solid fa-volume-high w-5 text-center text-base text-blue-400"></i>
-                                <span>شاشة النداء الصوتي</span>
-                            </a>
+                            
+
+
+                            
 
                             <!-- جدول وكالندر الجلسات العام -->
                             <a href="{{ route('calendar.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('calendar.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -389,11 +415,7 @@
                                 <span>كالندر وجدول الجلسات</span>
                             </a>
 
-                            <!-- مكتبة الملفات والفيديوهات -->
-                            <a href="{{ route('media.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('media.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                                <i class="fa-solid fa-photo-film w-5 text-center text-base {{ request()->routeIs('media.*') ? 'text-white' : 'text-purple-400' }}"></i>
-                                <span>الملفات والفيديوهات</span>
-                            </a>
+                            
 
                             <!-- طلبات الحجز والمواعيد -->
                             <a href="{{ route('bookings.index') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-2xl transition {{ request()->routeIs('bookings.*') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -704,6 +726,131 @@
                         </div>
                     </div>
                     @endif
+
+                    @if(Auth::check() && Auth::user()->role === 'parent' && isset($parentChild))
+                    @php
+                        $parentBellNotes = \App\Models\Homework::where('child_id', $parentChild->id)
+                            ->where(function($query) {
+                                $query->whereHas('messages', function($q) {
+                                    $q->where('sender_type', 'specialist')->whereNull('read_at');
+                                })->orWhere(function($q) {
+                                    $q->doesntHave('messages')->where('status', 'pending');
+                                });
+                            })->latest()->take(5)->get();
+                        $parentBellCount = $parentBellNotes->count();
+                    @endphp
+                    <!-- جرس الإشعارات لولي الأمر -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" @click.away="open = false" class="relative w-11 h-11 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition focus:outline-none">
+                            <i class="fa-regular fa-bell text-lg"></i>
+                            @if($parentBellCount > 0)
+                                <span class="absolute top-2 right-2 w-3 h-3 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                                <audio autoplay src="{{ asset('sounds/success.ogg') }}"></audio>
+                            @endif
+                        </button>
+                        
+                        <div x-show="open" x-cloak class="absolute left-0 mt-3 w-80 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden z-50 origin-top-left">
+                            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 class="font-black text-slate-700">إشعارات التمارين</h3>
+                                @if($parentBellCount > 0)
+                                    <span class="bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ $parentBellCount }} جديد</span>
+                                @endif
+                            </div>
+                            <div class="max-h-[320px] overflow-y-auto">
+                                @forelse($parentBellNotes as $note)
+                                    <a href="{{ route('parent.homeworks.show', ['code' => $parentChild->code, 'homework' => $note->id]) }}" class="block p-4 border-b border-slate-50 hover:bg-slate-50 transition relative">
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500"></div>
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-microphone-lines"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <h4 class="text-xs font-bold text-slate-700 mb-1 truncate">{{ $note->title }}</h4>
+                                                <p class="text-[11px] text-slate-500 truncate mb-1">يوجد تمرين أو رد جديد بانتظارك!</p>
+                                                <span class="text-[9px] text-slate-400">{{ $note->created_at->diffForHumans() }}</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="p-8 text-center"><p class="text-xs font-bold text-slate-500">لا توجد إشعارات جديدة</p></div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if(Auth::check() && Auth::user()->role === 'specialist')
+                    @php
+                        $specBellNotes = \App\Models\Homework::where('specialist_id', Auth::id())
+                            ->whereHas('messages', function($q) {
+                                $q->where('sender_type', 'parent')->whereNull('read_at');
+                            })->latest()->take(3)->get();
+                            
+                        $specBellMsgs = \App\Models\ParentMessage::where('recipient_type', 'specialist')
+                            ->whereNull('doctor_reply')
+                            ->latest()->take(3)->get();
+                            
+                        $specBellCount = $specBellNotes->count() + $specBellMsgs->count();
+                    @endphp
+                    <!-- جرس الإشعارات للأخصائي -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" @click.away="open = false" class="relative w-11 h-11 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition focus:outline-none">
+                            <i class="fa-regular fa-bell text-lg"></i>
+                            @if($specBellCount > 0)
+                                <span class="absolute top-2 right-2 w-3 h-3 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                                <audio autoplay src="{{ asset('sounds/chime.wav') }}"></audio>
+                            @endif
+                        </button>
+                        
+                        <div x-show="open" x-cloak class="absolute left-0 mt-3 w-80 bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden z-50 origin-top-left">
+                            <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 class="font-black text-slate-700">الإشعارات الجديدة</h3>
+                                @if($specBellCount > 0)
+                                    <span class="bg-rose-100 text-rose-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{{ $specBellCount }} جديد</span>
+                                @endif
+                            </div>
+                            <div class="max-h-[320px] overflow-y-auto">
+                                @foreach($specBellMsgs as $msg)
+                                    <a href="{{ route('doctor.portal') }}" class="block p-4 border-b border-slate-50 hover:bg-slate-50 transition relative">
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500"></div>
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-envelope"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <h4 class="text-xs font-bold text-slate-700 mb-1 truncate">{{ $msg->subject ?? 'رسالة جديدة' }}</h4>
+                                                <p class="text-[11px] text-slate-500 truncate mb-1">من: {{ $msg->parent_name }}</p>
+                                                <span class="text-[9px] text-slate-400">{{ $msg->created_at->diffForHumans() }}</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                                @foreach($specBellNotes as $note)
+                                    <a href="{{ route('doctor.homeworks.show', $note->id) }}" class="block p-4 border-b border-slate-50 hover:bg-slate-50 transition relative">
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+                                        <div class="absolute left-4 top-4 w-2 h-2 rounded-full bg-rose-500"></div>
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-headphones"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <h4 class="text-xs font-bold text-slate-700 mb-1 truncate">{{ $note->title }}</h4>
+                                                <p class="text-[11px] text-slate-500 truncate mb-1">تسجيل جديد للواجب</p>
+                                                <span class="text-[9px] text-slate-400">{{ $note->created_at->diffForHumans() }}</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                                @if($specBellCount === 0)
+                                    <div class="p-8 text-center"><p class="text-xs font-bold text-slate-500">لا توجد إشعارات جديدة</p></div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                 </div>
 
             </header>
@@ -723,8 +870,9 @@
     </div>
 
     <!-- Notification Sound -->
-    <audio id="urgentSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-    <audio id="bookingSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+    <audio id="urgentSound" src="{{ asset('sounds/chime.wav') }}" preload="auto"></audio>
+    <audio id="bookingSound" src="{{ asset('sounds/chime.wav') }}" preload="auto"></audio>
+    <audio id="successSound" src="{{ asset('sounds/ready.wav') }}" preload="auto"></audio>
 
     <script>
     // ==================== فتح قفل الصوت عند أول تفاعل مع الصفحة ====================
@@ -798,6 +946,7 @@
         @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'specialist', 'reception']))
         document.addEventListener('DOMContentLoaded', function() {
             let notifiedIds = JSON.parse(localStorage.getItem('notifiedUrgentIds') || '[]');
+            let isSpecialistUser = {{ Auth::user()->role === 'specialist' ? 'true' : 'false' }};
 
             function checkUrgentNotifications() {
                 fetch('{{ route("api.urgent-notifications") }}')
@@ -813,73 +962,144 @@
                             });
                             
                             if (newNotifications.length > 0) {
+                                let latest = newNotifications[0];
+                                let isSpecialistReady = latest.is_specialist_ready || false;
+                                
                                 // Play Sound
-                                document.getElementById('urgentSound').play().catch(e => console.log('Audio play failed:', e));
+                                let uSnd;
+                                if (isSpecialistReady) {
+                                    uSnd = document.getElementById('successSound');
+                                } else {
+                                    uSnd = document.getElementById('urgentSound');
+                                }
+                                
+                                if(uSnd) {
+                                    uSnd.currentTime = 0;
+                                    uSnd.loop = true;
+                                    uSnd.play().catch(e => console.log('Audio play failed:', e));
+                                }
                                 
                                 // Show Big Alert for the most recent one
-                                let latest = newNotifications[0];
-                                
                                 let isDayApology = latest.title && latest.title.includes('اعتذار طارئ عن يوم عمل');
                                 let isSpecialistSessionApology = latest.title && latest.title.includes('اعتذار طارئ للأخصائي عن الجلسة');
-                                let headerHtml = '';
-                                
-                                if (isDayApology) {
-                                    let specName = latest.sender.replace('الأخصائي: ', '');
-                                    headerHtml = `<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #f5c6cb;">الأخصائي: <span style="color: #d9534f;">${specName}</span></div>`;
-                                } else if (isSpecialistSessionApology) {
-                                    let specName = latest.sender; 
-                                    headerHtml = `<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #f5c6cb;">عاجل - اعتذار أخصائي عن جلسة<br><span style="font-size: 0.8em; color: #d9534f;">الطفل: ${latest.child_name || ''}</span></div>`;
-                                } else {
-                                    headerHtml = `<div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #ffeeba;">الطفل: <span style="color: #d9534f;">${latest.child_name || ''}</span></div>`;
-                                }
 
-                                Swal.fire({
-                                    icon: 'warning',
-                                    title: 'إشعار عاجل!',
-                                    html: `
-                                        ${headerHtml}
-                                        <span style="font-size: 1.2em; color: #333; font-weight: bold;">${latest.title}</span><br><br>
-                                        <span style="font-size: 1.1em; color: #555;">${latest.body}</span><br>
-                                        ${latest.affected_html || ''}
-                                        <br>
-                                        <small style="color: #777;">تم الإرسال بواسطة: ${latest.sender}</small>
-                                    `,
-                                    showDenyButton: true,
-                                    showCancelButton: true,
-                                    confirmButtonText: 'حسناً، فهمت',
-                                    denyButtonText: isDayApology ? 'نقل الجلسات لأخصائي آخر' : (isSpecialistSessionApology ? 'استبدال بأخصائي آخر' : 'تسكين طفل آخر'),
-                                    cancelButtonText: 'ذكرني لاحقاً',
-                                    confirmButtonColor: '#0d9488',
-                                    denyButtonColor: '#f59e0b',
-                                    cancelButtonColor: '#64748b',
-                                    width: '600px',
-                                    backdrop: `rgba(0,0,0,0.6)`
-                                }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        // حسناً، فهمت
-                                        notifiedIds.push(latest.id);
-                                        if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
-                                        localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
-                                    } else if (result.isDenied) {
-                                        // تسكين طفل آخر أو استبدال
-                                        notifiedIds.push(latest.id);
-                                        if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
-                                        localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
-                                        
-                                        if (isDayApology) {
-                                            window.location.href = '{{ route("calendar.index") }}?open_transfer=true';
-                                        } else if (isSpecialistSessionApology && latest.session_id) {
-                                            window.location.href = '{{ route("calendar.index") }}?replace_session_id=' + latest.session_id;
-                                        } else {
-                                            window.location.href = '{{ route("calendar.index") }}';
+                                if (isSpecialistReady) {
+                                    // ========== رسالة الأخصائي جاهز - تصميم مختلف وشيك ==========
+                                    let specName = latest.sender || '';
+                                    Swal.fire({
+                                        html: `
+                                            <div style="text-align: center; padding: 10px 0;">
+                                                <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #34d399, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 25px rgba(5,150,105,0.3);">
+                                                    <i class="fa-solid fa-bell-concierge" style="font-size: 2em; color: white;"></i>
+                                                </div>
+                                                <h2 style="font-size: 1.5em; font-weight: 900; color: #064e3b; margin-bottom: 8px;">الأخصائي جاهز!</h2>
+                                                <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #6ee7b7; border-radius: 16px; padding: 20px; margin: 15px 0;">
+                                                    <p style="font-size: 1.2em; color: #065f46; font-weight: 700; margin: 0;">
+                                                        الأخصائي <span style="color: #059669; font-weight: 900;">${specName}</span>
+                                                    </p>
+                                                    <p style="font-size: 1.1em; color: #065f46; font-weight: 600; margin: 8px 0 0;">
+                                                        جاهز لدخول الطفل القادم
+                                                    </p>
+                                                </div>
+                                                <p style="font-size: 0.85em; color: #6b7280; margin-top: 10px;">
+                                                    <i class="fa-solid fa-clock" style="margin-left: 4px;"></i> الآن
+                                                </p>
+                                            </div>
+                                        `,
+                                        showConfirmButton: true,
+                                        showCancelButton: true,
+                                        confirmButtonText: '<i class="fa-solid fa-check"></i> حسناً، فهمت',
+                                        cancelButtonText: '<i class="fa-solid fa-clock-rotate-left"></i> ذكرني لاحقاً',
+                                        confirmButtonColor: '#059669',
+                                        cancelButtonColor: '#6b7280',
+                                        width: '480px',
+                                        backdrop: `rgba(0,0,0,0.5)`,
+                                        allowOutsideClick: false,
+                                        showClass: { popup: 'animate__animated animate__fadeInDown' },
+                                        hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+                                        customClass: {
+                                            popup: 'rounded-3xl',
+                                            confirmButton: 'rounded-2xl px-6 py-2.5 font-bold',
+                                            cancelButton: 'rounded-2xl px-6 py-2.5 font-bold'
                                         }
-                                    } else if (result.dismiss === Swal.DismissReason.cancel) {
-                                        // ذكرني لاحقاً (بعد 15 دقيقة)
-                                        let tempIgnored = JSON.parse(sessionStorage.getItem('temporarilyIgnoredUrgentIds') || '{}');
-                                        tempIgnored[latest.id] = Date.now() + (15 * 60 * 1000);
-                                        sessionStorage.setItem('temporarilyIgnoredUrgentIds', JSON.stringify(tempIgnored));
+                                    }).then((result) => {
+                                        document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+
+                                        if (result.isConfirmed) {
+                                            notifiedIds.push(latest.id);
+                                            if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
+                                            localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
+                                        } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                            let tempIgnored = JSON.parse(sessionStorage.getItem('temporarilyIgnoredUrgentIds') || '{}');
+                                            tempIgnored[latest.id] = Date.now() + (10 * 60 * 1000);
+                                            sessionStorage.setItem('temporarilyIgnoredUrgentIds', JSON.stringify(tempIgnored));
+                                        }
+                                    });
+                                } else {
+                                    // ========== إشعارات عاجلة عادية (اعتذار أخصائي / رسائل عاجلة) ==========
+                                    let headerHtml = '';
+                                    if (isDayApology) {
+                                        let specName = latest.sender.replace('الأخصائي: ', '');
+                                        headerHtml = `<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #f5c6cb;">الأخصائي: <span style="color: #d9534f;">${specName}</span></div>`;
+                                    } else if (isSpecialistSessionApology) {
+                                        let specName = latest.sender; 
+                                        headerHtml = `<div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #f5c6cb;">عاجل - اعتذار أخصائي عن جلسة<br><span style="font-size: 0.8em; color: #d9534f;">الطفل: ${latest.child_name || ''}</span></div>`;
+                                    } else {
+                                        headerHtml = `<div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.8em; font-weight: bold; border: 2px solid #ffeeba;">الطفل: <span style="color: #d9534f;">${latest.child_name || ''}</span></div>`;
                                     }
-                                });
+
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'إشعار عاجل!',
+                                        html: `
+                                            ${headerHtml}
+                                            <span style="font-size: 1.2em; color: #333; font-weight: bold;">${latest.title}</span><br><br>
+                                            <span style="font-size: 1.1em; color: #555;">${latest.body}</span><br>
+                                            ${latest.affected_html || ''}
+                                            <br>
+                                            <small style="color: #777;">تم الإرسال بواسطة: ${latest.sender}</small>
+                                        `,
+                                        showDenyButton: !isSpecialistUser,
+                                        showCancelButton: true,
+                                        confirmButtonText: 'حسناً، فهمت',
+                                        denyButtonText: isDayApology ? 'نقل الجلسات لأخصائي آخر' : (isSpecialistSessionApology ? 'استبدال بأخصائي آخر' : 'تسكين طفل اخر'),
+                                        cancelButtonText: 'ذكرني لاحقاً',
+                                        confirmButtonColor: '#0d9488',
+                                        denyButtonColor: '#f59e0b',
+                                        cancelButtonColor: '#64748b',
+                                        width: '600px',
+                                        backdrop: `rgba(0,0,0,0.6)`,
+                                        allowOutsideClick: false,
+                                    }).then((result) => {
+                                        document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+
+                                        if (result.isConfirmed) {
+                                            notifiedIds.push(latest.id);
+                                            if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
+                                            localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
+                                        } else if (result.isDenied) {
+                                            notifiedIds.push(latest.id);
+                                            if (notifiedIds.length > 100) notifiedIds = notifiedIds.slice(-100);
+                                            localStorage.setItem('notifiedUrgentIds', JSON.stringify(notifiedIds));
+                                            
+                                            if (isDayApology) {
+                                                window.location.href = '{{ route("calendar.index") }}?open_transfer=true';
+                                            } else if (isSpecialistSessionApology && latest.session_id) {
+                                                window.location.href = '{{ route("calendar.index") }}?replace_session_id=' + latest.session_id;
+                                            } else {
+                                                if (latest.session_id) {
+                                                    window.location.href = '{{ route("calendar.index") }}?edit_session_id=' + latest.session_id;
+                                                } else {
+                                                    window.location.href = '{{ route("calendar.index") }}';
+                                                }
+                                            }
+                                        } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                            let tempIgnored = JSON.parse(sessionStorage.getItem('temporarilyIgnoredUrgentIds') || '{}');
+                                            tempIgnored[latest.id] = Date.now() + (10 * 60 * 1000);
+                                            sessionStorage.setItem('temporarilyIgnoredUrgentIds', JSON.stringify(tempIgnored));
+                                        }
+                                    });
+                                }
 
                                 // Mark all other fetched notifications as notified so they don't pile up
                                 if (newNotifications.length > 1) {
@@ -1011,6 +1231,47 @@
             @endif
         });
         @endif
+        window.notifyAdminReady = function() {
+            Swal.fire({
+                title: 'هل أنت متأكد؟',
+                text: 'سيتم إرسال إشعار للإدارة بأنك جاهز لاستقبال الطفل التالي.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'نعم، أنا جاهز',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('{{ route("api.specialist-ready") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            Swal.fire({
+                                title: 'تم بنجاح!',
+                                text: 'تم إرسال الإشعار للإدارة.',
+                                icon: 'success',
+                                confirmButtonText: 'حسناً',
+                                confirmButtonColor: '#10b981'
+                            });
+                        } else {
+                            Swal.fire('خطأ', 'حدث خطأ أثناء إرسال الإشعار', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Swal.fire('خطأ', 'حدث خطأ في الاتصال', 'error');
+                    });
+                }
+            });
+        };
     </script>
 
     <?php echo $__env->yieldPushContent('modals'); ?>

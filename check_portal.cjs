@@ -1,0 +1,9 @@
+﻿const fs = require('fs');
+const content = fs.readFileSync('d:\\Projects\\Centers\\Centers\\resources\\views\\parent\\portal.blade.php', 'utf8');
+const lines = content.split('\n');
+const idx = lines.findIndex(l => l.includes('actions'));
+if (idx > -1) {
+    console.log(lines.slice(idx - 10, idx + 20).join('\n'));
+} else {
+    console.log(lines.slice(30, 60).join('\n'));
+}

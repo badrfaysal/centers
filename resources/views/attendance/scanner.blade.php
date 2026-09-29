@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'نظام مسح الـ QR وتسجيل الحضور')
 

@@ -82,7 +82,7 @@ class DashboardController extends Controller
 
         foreach ($uniqueRooms as $roomName) {
             $currentSession = $todaySchedules->filter(function($s) use ($roomName, $nowTime) {
-                return $s->room_name == $roomName && $s->start_time <= $nowTime && ($s->end_time >= $nowTime || !$s->end_time);
+                return $s->room_name == $roomName && $s->status === 'scheduled' && $s->start_time <= $nowTime && ($s->end_time >= $nowTime || !$s->end_time);
             })->first();
 
             if ($currentSession) {
@@ -314,6 +314,45 @@ class DashboardController extends Controller
             ];
         });
 
+        if ($user && in_array($user->role, ['admin', 'reception', 'user'])) {
+            $readyAlerts = \Illuminate\Support\Facades\Cache::get('specialist_ready_alerts', []);
+            $recentAlerts = [];
+            foreach($readyAlerts as $alert) {
+                if (time() - $alert['timestamp'] < 300) { // Keep alive for 5 minutes
+                    $recentAlerts[] = $alert;
+                    // Prepend to messages so it shows up first
+                    $messages->prepend([
+                        'id' => $alert['id'],
+                        'title' => 'الأخصائي جاهز!',
+                        'sender' => $alert['specialist_name'],
+                        'body' => 'الأخصائي ' . $alert['specialist_name'] . ' جاهز الآن لدخول الطفل التالي للقاعة.',
+                        'time' => 'الآن',
+                        'child_name' => 'إشعار جاهزية',
+                        'affected_html' => '<div class="mt-3 p-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold text-center border border-emerald-200">الرجاء توجيه الطفل التالي لهذه القاعة</div>',
+                        'session_id' => null,
+                        'is_specialist_ready' => true
+                    ]);
+                }
+            }
+            \Illuminate\Support\Facades\Cache::put('specialist_ready_alerts', $recentAlerts, 600);
+        }
+
         return response()->json(['notifications' => $messages]);
+    }
+
+    public function markSpecialistReady(\Illuminate\Http\Request $request)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user && $user->role === 'specialist') {
+            $alerts = \Illuminate\Support\Facades\Cache::get('specialist_ready_alerts', []);
+            $alerts[] = [
+                'id' => 'ready_' . $user->id . '_' . time(),
+                'specialist_name' => $user->name,
+                'timestamp' => time()
+            ];
+            \Illuminate\Support\Facades\Cache::put('specialist_ready_alerts', $alerts, 600);
+            return response()->json(['status' => 'success']);
+        }
+        return response()->json(['status' => 'error'], 403);
     }
 }

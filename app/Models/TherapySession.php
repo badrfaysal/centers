@@ -139,4 +139,9 @@ class TherapySession extends Model
 
         return "https://wa.me/2{$phone}?text=" . urlencode($msg);
     }
+
+    public function homeworks()
+    {
+        return $this->hasMany(Homework::class);
+    }
 }
